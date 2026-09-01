@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: premium_web
+      POSTGRES_USER: premium
+      POSTGRES_PASSWORD: premium
+    ports:
+      - "127.0.0.1:55434:5432"
+    volumes:
+      - premium_postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U premium -d premium_web"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1026:1025"
+      - "127.0.0.1:8026:8025"
+
+volumes:
+  premium_postgres:

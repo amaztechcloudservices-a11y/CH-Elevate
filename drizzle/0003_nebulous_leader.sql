@@ -1,0 +1,1 @@
+ALTER TABLE "course_offerings" ADD COLUMN "is_cancelled" boolean DEFAULT false NOT NULL;

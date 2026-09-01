@@ -1,0 +1,4 @@
+import type { Metadata } from "next";
+import { PublicShell } from "@/components/public-shell";
+export const metadata: Metadata = { title: "Privacy" };
+export default function PrivacyPage() { return <PublicShell><main className="legal-page site-container"><h1>Privacy notice</h1><p>This preview notice must be replaced with counsel-approved information before launch.</p><h2>Information collected</h2><p>Contact, consultation, subscription, and account information required to provide the requested service.</p><h2>How information is used</h2><p>To respond to enquiries, manage bookings, administer accounts, deliver requested communications, and meet legal obligations.</p><h2>Your choices</h2><p>Production workflows will support access, correction, withdrawal, and deletion requests as applicable.</p></main></PublicShell>; }
