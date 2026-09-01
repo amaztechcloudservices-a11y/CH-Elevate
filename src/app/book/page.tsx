@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
 import { ConsultationForm } from "@/components/consultation-form";
-import { ReferenceFooter, ReferenceHeader } from "@/components/reference-site";
 
 export const metadata: Metadata = {
   title: "Book a Discovery Call",
@@ -12,7 +11,6 @@ export default function BookPage() {
   return (
     <div className="busima-home elevate-site elevate-book-page">
       <section className="elevate-book-hero">
-        <ReferenceHeader />
         <div className="ref-container">
           <p className="ref-kicker ref-kicker--light">Complimentary discovery call</p>
           <h1>A focused 30-minute conversation.</h1>
@@ -35,7 +33,6 @@ export default function BookPage() {
           </div>
         </section>
       </main>
-      <ReferenceFooter />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { AdminLoginForm } from "@/components/admin-login-form";
+import { BrandLogo } from "@/components/brand-logo";
 
 export const metadata: Metadata = {
   title: "Administrator Sign In",
@@ -13,7 +14,7 @@ export default function AdminLoginPage() {
     <main className="admin-login">
       <section>
         <Link className="admin-login__brand" href="/">
-          CH Elevate <span>consultancy limited</span>
+          <BrandLogo className="brand-logo__image" priority />
         </Link>
         <p className="section-label">Secure administration</p>
         <h1>Manage the entire website.</h1>

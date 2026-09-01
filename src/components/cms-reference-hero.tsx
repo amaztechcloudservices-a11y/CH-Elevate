@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import { ReferenceHeader } from "@/components/reference-site";
 import { useSiteContent } from "@/lib/use-site-content";
 
 type PageSlug =
@@ -69,7 +68,6 @@ export function CmsReferenceHero({
           />
       ))}
       <div className={isHome ? "ref-hero__overlay" : "about-ref__hero-wash"} aria-hidden="true" />
-      <ReferenceHeader active={pageSlug} />
       <div className={`${isHome ? "ref-container ref-hero__content" : "ref-container about-ref__hero-content"} cms-hero__content`}>
         {slide.eyebrow && <p className={isHome ? "ref-kicker ref-kicker--light" : "ref-kicker ref-kicker--light"}>{slide.eyebrow}</p>}
         <h1>{slide.title}</h1>

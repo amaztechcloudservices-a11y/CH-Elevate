@@ -6,6 +6,7 @@ import "@fontsource-variable/sora";
 
 import { Toaster } from "@/components/ui/sonner";
 import { SiteMotion } from "@/components/site-motion";
+import { GlobalSiteChrome } from "@/components/global-site-chrome";
 
 import "./globals.css";
 
@@ -16,6 +17,10 @@ export const metadata: Metadata = {
   },
   description:
     "PMO consultancy, process efficiency, coaching, training, and implementation support for organisations ready to deliver measurable change.",
+  icons: {
+    icon: [{ url: "/favicon.png", type: "image/png" }],
+    shortcut: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
@@ -24,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body>
-        {children}
+        <GlobalSiteChrome>{children}</GlobalSiteChrome>
         <SiteMotion />
         <Toaster richColors closeButton />
       </body>

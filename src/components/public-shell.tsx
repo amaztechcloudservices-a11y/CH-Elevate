@@ -1,5 +1,4 @@
-import { Newsletter, SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
+import { Newsletter } from "@/components/site-footer";
 
 export function PublicShell({
   children,
@@ -10,10 +9,8 @@ export function PublicShell({
 }) {
   return (
     <>
-      <SiteHeader dark />
       {children}
       {newsletter ? <Newsletter /> : null}
-      <SiteFooter />
     </>
   );
 }

@@ -168,10 +168,10 @@ export const defaultCmsSnapshot: CmsSnapshot = {
     headerCtaLabel: "Book a call",
     headerCtaHref: "/book",
     footerSummary:
-      "PMO consultancy, process efficiency, coaching, and implementation support that stays with you until results are real.",
+      "CH Elevate is a consultancy and training partner helping organisations build stronger systems, capable leaders, and lasting performance.",
     footerAddress: "Kingston\nJamaica",
-    footerEmail: "hello@chelevate.com",
-    footerPhone: "Phone number to be confirmed",
+    footerEmail: "info@ch-elevateconsultancy.com",
+    footerPhone: "+1876-829-0413",
     mapEmbedUrl:
       "https://www.openstreetmap.org/export/embed.html?bbox=-76.839%2C17.956%2C-76.751%2C18.056&layer=mapnik&marker=18.0179%2C-76.8099",
     mapDirectionsUrl:

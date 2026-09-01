@@ -1,5 +1,7 @@
 import { and, eq, inArray, or } from "drizzle-orm";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 
 import { auditLogs, courseCertificates, courseInvoices, courseMaterials, courseOfferings, courseRegistrations, organisationMemberships, profiles, registrationParticipants } from "@/db/schema";
 import { getAuth } from "@/server/auth";
@@ -23,8 +25,11 @@ export async function GET(request: Request, context: { params: Promise<{ kind: s
     const page = pdf.addPage([842, 595]);
     const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
     const regular = await pdf.embedFont(StandardFonts.Helvetica);
+    const logo = await pdf.embedPng(await readFile(path.join(process.cwd(), "public", "images", "ch-elevate-logo.png")));
+    const logoWidth = 200;
+    const logoHeight = (logo.height / logo.width) * logoWidth;
     page.drawRectangle({ x: 18, y: 18, width: 806, height: 559, borderColor: rgb(0.04, 0.18, 0.43), borderWidth: 3 });
-    page.drawText("CH ELEVATE", { x: 330, y: 510, size: 24, font: bold, color: rgb(0.04, 0.18, 0.43) });
+    page.drawImage(logo, { x: (842 - logoWidth) / 2, y: 490, width: logoWidth, height: logoHeight });
     page.drawText("Certificate of Completion", { x: 226, y: 420, size: 34, font: bold, color: rgb(0.03, 0.08, 0.18) });
     page.drawText("This certifies that", { x: 350, y: 365, size: 14, font: regular, color: rgb(0.28, 0.32, 0.41) });
     page.drawText(row.certificate.participantName, { x: 220, y: 315, size: 30, font: bold, color: rgb(0.04, 0.26, 0.84) });

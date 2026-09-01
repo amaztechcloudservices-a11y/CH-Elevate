@@ -4,6 +4,7 @@ import { ArrowRight, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
+import { BrandLogo } from "@/components/brand-logo";
 import { useSiteContent } from "@/lib/use-site-content";
 
 export function SiteHeader({ dark = false }: { dark?: boolean }) {
@@ -14,10 +15,7 @@ export function SiteHeader({ dark = false }: { dark?: boolean }) {
     <header className={`site-header ${dark ? "site-header--dark" : ""}`}>
       <div className="site-container site-header__inner">
         <Link className="brand" href="/" aria-label={`${settings.brandName} home`}>
-          <span className="brand__mark" aria-hidden="true"><span /></span>
-          <span className="brand__name">
-            {settings.brandName} <small>{settings.brandTagline}</small>
-          </span>
+          <BrandLogo className="brand-logo__image" priority />
         </Link>
         <nav className={`desktop-nav ${open ? "is-open" : ""}`} aria-label="Primary navigation">
           {settings.navigation.filter((item) => item.isVisible).map((item) => (

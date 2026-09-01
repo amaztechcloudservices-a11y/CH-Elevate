@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
-import { ReferenceFooter, ReferenceHeader } from "@/components/reference-site";
 import confirmationPortrait from "../../../../public/images/jamaican-consultation-confirmation.png";
 
 export const metadata: Metadata = {
@@ -14,7 +13,6 @@ export const metadata: Metadata = {
 export default function BookingConfirmationPage() {
   return (
     <div className="busima-home elevate-site elevate-confirmation-page">
-      <ReferenceHeader />
       <main className="elevate-confirmation">
         <div className="ref-container elevate-confirmation__grid">
           <div className="elevate-confirmation__content">
@@ -53,7 +51,6 @@ export default function BookingConfirmationPage() {
           </figure>
         </div>
       </main>
-      <ReferenceFooter />
     </div>
   );
 }

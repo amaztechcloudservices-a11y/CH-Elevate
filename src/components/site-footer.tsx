@@ -4,6 +4,7 @@ import { ArrowRight, Mail, MapPin, Phone } from "lucide-react";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 
+import { BrandLogo } from "@/components/brand-logo";
 import { services } from "@/lib/site-data";
 import { useSiteContent } from "@/lib/use-site-content";
 
@@ -54,8 +55,7 @@ export function SiteFooter() {
       <div className="site-container footer-grid">
         <div className="footer-brand">
           <Link className="brand brand--footer" href="/">
-            <span className="brand__mark" aria-hidden="true"><span /></span>
-            <span className="brand__name">{settings.brandName} <small>{settings.brandTagline}</small></span>
+            <BrandLogo className="brand-logo__image" />
           </Link>
           <p>{settings.footerSummary}</p>
           {settings.socialLinks.filter((item) => item.isVisible).map((item) => (
@@ -83,7 +83,12 @@ export function SiteFooter() {
       </div>
       <div className="site-container footer-legal">
         <p>{settings.copyright}</p>
-        <div><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></div>
+        <div>
+          <Link href="/terms">Terms and Conditions</Link>
+          <Link href="/privacy">Privacy Policy</Link>
+          <Link href="/refund-policy">Refund Policy</Link>
+          <Link href="/data-protection">Data Protection</Link>
+        </div>
       </div>
     </footer>
   );

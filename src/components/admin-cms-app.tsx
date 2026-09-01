@@ -22,6 +22,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { authClient } from "@/lib/auth-client";
+import { BrandLogo } from "@/components/brand-logo";
 import { CourseAdminPanel } from "@/components/course-admin-panel";
 import type {
   CmsSnapshot,
@@ -165,7 +166,7 @@ export function AdminCmsApp() {
     <main className="cms-admin">
       <aside className={`cms-admin__sidebar ${mobileOpen ? "is-open" : ""}`}>
         <Link className="cms-admin__brand" href="/" target="_blank">
-          CH Elevate <span>admin</span>
+          <BrandLogo className="brand-logo__image" priority />
         </Link>
         <nav aria-label="Administration sections">
           {tabs.map(({ id, label, icon: Icon }) => (

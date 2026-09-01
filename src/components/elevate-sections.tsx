@@ -7,7 +7,6 @@ import type { ReactNode } from "react";
 import { CmsPageSections } from "@/components/cms-page-sections";
 import { CmsReferenceHero } from "@/components/cms-reference-hero";
 import {
-  ReferenceFooter,
   ReferenceNewsletter,
 } from "@/components/reference-site";
 
@@ -38,7 +37,6 @@ export function ElevatePageShell({
       <main>{children}</main>
       <CmsPageSections pageSlug={pageSlug} />
       {newsletter && <ReferenceNewsletter />}
-      <ReferenceFooter />
     </div>
   );
 }

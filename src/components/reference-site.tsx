@@ -2,8 +2,10 @@
 
 import { Headphones, Mail, Menu, X } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { FormEvent, useState } from "react";
 
+import { BrandLogo } from "@/components/brand-logo";
 import { useSiteContent } from "@/lib/use-site-content";
 
 const footerServices = [
@@ -25,17 +27,34 @@ type ActivePage =
   | "faq"
   | "contact";
 
-export function ReferenceHeader({ active = "home" }: { active?: ActivePage }) {
+export function ReferenceHeader({ active }: { active?: ActivePage }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { settings } = useSiteContent();
+  const pathname = usePathname();
+  const inferredActive: ActivePage | undefined = pathname === "/"
+    ? "home"
+    : pathname.startsWith("/about")
+      ? "about"
+      : pathname.startsWith("/services")
+        ? "services"
+        : pathname.startsWith("/portfolio") || pathname.startsWith("/projects")
+          ? "portfolio"
+          : pathname.startsWith("/programmes")
+            ? "programmes"
+            : pathname.startsWith("/community")
+              ? "community"
+              : pathname.startsWith("/faq")
+                ? "faq"
+                : pathname.startsWith("/contact")
+                  ? "contact"
+                  : undefined;
+  const activePage = active ?? inferredActive;
 
   return (
     <header className="ref-header">
       <div className="ref-container ref-header__inner">
         <Link className="ref-logo" href="/" aria-label={`${settings.brandName} home`}>
-          <span className="ref-logo__name">{settings.brandName}</span>
-          <span className="ref-logo__rule" aria-hidden="true" />
-          <small>{settings.brandTagline}</small>
+          <BrandLogo className="brand-logo__image" priority />
         </Link>
         <nav
           id="ref-primary-navigation"
@@ -46,7 +65,7 @@ export function ReferenceHeader({ active = "home" }: { active?: ActivePage }) {
             const itemPage = item.href === "/" ? "home" : item.href.slice(1);
             return (
               <Link
-                className={active === itemPage ? "active" : undefined}
+                className={activePage === itemPage ? "active" : undefined}
                 href={item.href}
                 key={item.id}
                 target={item.newTab ? "_blank" : undefined}
@@ -159,9 +178,7 @@ export function ReferenceFooter() {
       <div className="ref-container ref-footer__grid">
         <div className="ref-footer__brand">
           <Link className="ref-logo ref-logo--footer" href="/">
-            <span className="ref-logo__name">{settings.brandName}</span>
-            <span className="ref-logo__rule" aria-hidden="true" />
-            <small>{settings.brandTagline}</small>
+            <BrandLogo className="brand-logo__image" />
           </Link>
           <p>{settings.footerSummary}</p>
           <div className="ref-footer__help">
@@ -199,7 +216,12 @@ export function ReferenceFooter() {
       </div>
       <div className="ref-container ref-footer__legal">
         <p>{settings.copyright}</p>
-        <div><Link href="/terms">Terms of use</Link><Link href="/privacy">Privacy policy</Link></div>
+        <div>
+          <Link href="/terms">Terms and Conditions</Link>
+          <Link href="/privacy">Privacy Policy</Link>
+          <Link href="/refund-policy">Refund Policy</Link>
+          <Link href="/data-protection">Data Protection</Link>
+        </div>
       </div>
     </footer>
   );
