@@ -1,0 +1,14 @@
+.git
+.github
+.next
+.env*
+!.env.example
+node_modules
+storage
+.local-postgres-data
+test-results
+playwright-report
+coverage
+*.log
+*.tsbuildinfo
+

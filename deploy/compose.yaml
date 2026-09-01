@@ -1,0 +1,78 @@
+name: ch-elevate
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file:
+      - ../.env.production
+    volumes:
+      - ch_elevate_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: runner
+    restart: unless-stopped
+    env_file:
+      - ../.env.production
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ch_elevate_materials:/data/course-materials
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - backend
+      - coolify
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=coolify
+      - traefik.http.services.ch-elevate.loadbalancer.server.port=3000
+      - traefik.http.routers.ch-elevate-http.rule=Host(`ch-elevateconsultancy.com`) || Host(`www.ch-elevateconsultancy.com`)
+      - traefik.http.routers.ch-elevate-http.entrypoints=http
+      - traefik.http.routers.ch-elevate-http.middlewares=ch-elevate-https-redirect
+      - traefik.http.middlewares.ch-elevate-https-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.ch-elevate-https-redirect.redirectscheme.permanent=true
+      - traefik.http.routers.ch-elevate-https.rule=Host(`ch-elevateconsultancy.com`) || Host(`www.ch-elevateconsultancy.com`)
+      - traefik.http.routers.ch-elevate-https.entrypoints=https
+      - traefik.http.routers.ch-elevate-https.tls=true
+      - traefik.http.routers.ch-elevate-https.tls.certresolver=letsencrypt
+
+  tools:
+    profiles: ["tools"]
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: tools
+    env_file:
+      - ../.env.production
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - backend
+
+networks:
+  backend:
+    internal: true
+  coolify:
+    external: true
+
+volumes:
+  ch_elevate_postgres:
+  ch_elevate_materials:
+
