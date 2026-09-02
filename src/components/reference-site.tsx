@@ -212,8 +212,7 @@ export function ReferenceFooter() {
         <div className="ref-footer__access">
           <h2>Access</h2>
           <ul>
-            <li><Link href="/portal/register">Student registration</Link></li>
-            <li><Link href="/portal/login">Student portal</Link></li>
+            <li><Link href="/portal/register">Student Registration</Link></li>
             <li><Link href="/admin?tab=bookings">Booking administration</Link></li>
             <li><Link href="/admin?tab=courses">Course administration</Link></li>
           </ul>
