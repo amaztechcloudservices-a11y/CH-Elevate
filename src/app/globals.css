@@ -1706,6 +1706,7 @@
 .elevate-book-page__grid .consultation-form {
   padding: 38px;
   background: var(--elevate-off-white);
+  border: 2px solid #949494;
   box-shadow: 0 22px 65px rgb(11 31 58 / 10%);
 }
 
