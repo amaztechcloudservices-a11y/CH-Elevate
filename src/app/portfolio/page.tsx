@@ -139,7 +139,7 @@ export default function PortfolioPage() {
         </div>
       </section>
 
-      <section className="elevate-section elevate-section--navy">
+      <section className="elevate-section elevate-section--navy elevate-stories__global-reach">
         <div className="ref-container">
           <SectionHeading eyebrow="Our global reach" title="International experience across sectors and geographies" intro={<p>CH Elevate is structured to support organisations across international markets, remotely and on-site. Frameworks and coaching approaches are adapted to varied cultural, regulatory, and operational environments.</p>} align="center" />
           <div className="elevate-region-grid">

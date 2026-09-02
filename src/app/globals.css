@@ -68,6 +68,9 @@
   --ref-line: #e4e8ef;
   --ref-surface: #ffffff;
   --ref-soft: #f8f9fb;
+  --site-button-green: rgb(3 109 97);
+  --site-button-yellow: var(--brand-gold);
+  --site-button-hover-text: #0c463e;
   min-height: 100vh;
   background: var(--white);
 }
@@ -77,8 +80,11 @@
 }
 
 .global-site-shell--solid > .ref-header {
-  position: relative;
   background: var(--brand-navy-deep);
+}
+
+.global-site-shell--solid > .global-site-shell__content {
+  padding-top: 84px;
 }
 
 .global-site-shell--solid .legal-page {
@@ -135,14 +141,15 @@
 .elevate-site .ref-button {
   min-height: 48px;
   border-radius: 0;
-  background: var(--elevate-gold-bright);
-  color: var(--elevate-navy);
+  background: rgb(3 109 97);
+  color: #fff;
   box-shadow: 0 12px 25px rgb(11 31 58 / 12%);
 }
 
 .elevate-site .ref-button:hover {
   transform: translateY(-3px);
-  background: var(--brand-gold-light);
+  background: rgb(2 82 73);
+  color: #fff;
   box-shadow: 0 18px 34px rgb(11 31 58 / 20%);
 }
 
@@ -847,6 +854,10 @@
 }
 
 .elevate-home .elevate-cta {
+  background: var(--white);
+}
+
+.elevate-services > main > .elevate-cta {
   background: var(--white);
 }
 
@@ -6390,11 +6401,23 @@ textarea {
 }
 
 .ref-header {
-  position: absolute;
-  z-index: 5;
+  position: fixed;
+  z-index: 100;
   top: 0;
   left: 0;
   width: 100%;
+  transition:
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.ref-header.is-scrolled {
+  background: #fff;
+  box-shadow: 0 8px 28px rgb(3 58 51 / 14%);
+}
+
+.global-site-shell--solid > .ref-header.is-scrolled {
+  background: #fff;
 }
 
 .ref-header__inner {
@@ -6453,6 +6476,12 @@ textarea {
   color: var(--ref-surface);
   font-size: 14px;
   font-weight: 650;
+  transition: color 160ms ease;
+}
+
+.ref-nav a:hover,
+.ref-nav a:focus-visible {
+  color: rgb(3 109 97);
 }
 
 .ref-nav a.active {
@@ -6469,13 +6498,23 @@ textarea {
   width: 46px;
   height: 46px;
   place-items: center;
-  color: var(--ref-surface);
-  background: transparent;
-  border: 1px solid rgb(255 255 255 / 40%);
+  color: #fff;
+  background: rgb(3 109 97);
+  border: 1px solid rgb(3 109 97);
 }
 
 .ref-menu svg {
   width: 20px;
+}
+
+.ref-header.is-scrolled .ref-nav:not(.is-open) a {
+  color: #0c463e;
+}
+
+.ref-header.is-scrolled .ref-nav:not(.is-open) a:hover,
+.ref-header.is-scrolled .ref-nav:not(.is-open) a:focus-visible,
+.ref-header.is-scrolled .ref-nav:not(.is-open) a.active {
+  color: rgb(3 109 97);
 }
 
 .ref-hero__content {
@@ -9382,7 +9421,7 @@ textarea {
 }
 
 /* Course registration, administration, and authenticated portal */
-.course-registration{background:#fff;padding:104px 0;color:var(--ink)}
+.course-registration{background:#f7f7f7;padding:104px 0;color:var(--ink)}
 .course-registration__heading{display:grid;grid-template-columns:1.25fr .75fr;gap:48px;align-items:end;margin-bottom:42px}.course-registration__heading span,.course-application header span{color:var(--blue);font:750 13px/1.2 var(--font-body),"Manrope",sans-serif;letter-spacing:.1em;text-transform:uppercase}.course-registration__heading h2{max-width:760px;margin:8px 0 0;font:650 clamp(34px,4vw,54px)/1.05 var(--font-display),"Sora",sans-serif;letter-spacing:-.04em}.course-registration__heading>p{color:var(--slate);font:500 17px/1.7 var(--font-body),sans-serif}.course-registration__loading,.course-registration__empty{display:flex;align-items:center;gap:12px;max-width:1280px;margin:0 auto;padding:64px;border:1px solid var(--line)}
 .course-offering-list{border-top:1px solid var(--line)}.course-offering-list article{display:grid;grid-template-columns:minmax(280px,1.25fr) minmax(400px,1fr) 180px;gap:36px;align-items:center;padding:30px 0;border-bottom:1px solid var(--line)}.course-offering-list h3{margin:6px 0 8px;font:650 24px/1.2 var(--font-display),sans-serif;letter-spacing:-.025em}.course-offering-list article>div:first-child>span{color:var(--blue);font:700 12px/1.2 var(--font-code),monospace}.course-offering-list p{margin:0;color:var(--slate);font:450 14px/1.55 var(--font-body),sans-serif}.course-offering-list dl{display:grid;gap:10px;margin:0}.course-offering-list dl div{display:grid;grid-template-columns:110px 1fr;gap:12px}.course-offering-list dt,.course-offering-list dd{margin:0;font:550 13px/1.45 var(--font-body),sans-serif}.course-offering-list dt{display:flex;gap:7px;color:var(--slate)}.course-offering-list dt svg{width:16px}.course-offering-list dd{color:var(--ink);text-transform:capitalize}.course-offering-list__action{display:grid;gap:12px;justify-items:end}.course-offering-list__action strong{font:700 18px/1.2 var(--font-display),sans-serif}
 .course-application{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px}.course-application__backdrop{position:absolute;inset:0;width:100%;border:0;background:rgb(3 20 49/.72)}.course-application>form{position:relative;width:min(900px,100%);max-height:calc(100vh - 48px);overflow:auto;background:#fff;box-shadow:0 24px 80px rgb(3 20 49/.25)}.course-application header{display:flex;justify-content:space-between;gap:24px;padding:28px 32px;border-bottom:1px solid var(--line)}.course-application header h2{margin:6px 0 4px;font:650 28px/1.2 var(--font-display),sans-serif}.course-application header p{margin:0;color:var(--slate)}.course-application header>button{align-self:start;border:0;background:transparent;color:var(--ink);font:400 28px/1 var(--font-body),sans-serif}.course-application__body{display:grid;gap:28px;padding:32px}.course-application fieldset{display:grid;gap:16px;margin:0;padding:0;border:0}.course-application legend{margin-bottom:14px;font:700 17px/1.2 var(--font-display),sans-serif}.course-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.course-application label,.course-admin-form label{display:grid;gap:7px;font:650 13px/1.2 var(--font-body),sans-serif}.course-application input,.course-admin-form input,.course-admin-form select,.course-admin-form textarea,.portal-add-person input{min-height:46px;padding:10px 12px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--ink);font:500 14px/1.4 var(--font-body),sans-serif}.course-admin-form textarea{min-height:92px;resize:vertical}.course-participant-row{display:grid;grid-template-columns:1fr 1fr .8fr 40px;gap:12px;align-items:end}.course-participant-row>button{width:40px;height:46px;border:1px solid var(--line);background:#fff;color:#b42318}.course-participant-row svg{width:17px}.course-add-person{justify-self:start;display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid var(--blue);background:#fff;color:var(--blue);font:700 13px/1.2 var(--font-body),sans-serif}.course-add-person svg{width:16px}.course-consent{grid-template-columns:20px 1fr!important;align-items:start}.course-consent input{min-height:auto}.course-form-status{margin:0;padding:12px;background:var(--mist)}.course-form-status--error{color:#b42318}.course-form-status--success{color:#16794a}
@@ -9457,4 +9496,239 @@ textarea {
   .student-profile__logo {
     width: 132px;
   }
+}
+
+/* Global action palette: one green across public, booking, registration, and portal UI. */
+.global-site-shell.elevate-site button:not(.course-application__backdrop),
+.global-site-shell.elevate-site input[type="button"],
+.global-site-shell.elevate-site input[type="submit"],
+.global-site-shell.elevate-site :is(a.button, a.ref-button, a.elevate-button-secondary) {
+  color: #fff;
+  background: var(--site-button-green);
+  border-color: var(--site-button-green);
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.global-site-shell.elevate-site button:not(.course-application__backdrop):not(:disabled):hover,
+.global-site-shell.elevate-site button:not(.course-application__backdrop):not(:disabled):focus-visible,
+.global-site-shell.elevate-site input[type="button"]:not(:disabled):hover,
+.global-site-shell.elevate-site input[type="button"]:not(:disabled):focus-visible,
+.global-site-shell.elevate-site input[type="submit"]:not(:disabled):hover,
+.global-site-shell.elevate-site input[type="submit"]:not(:disabled):focus-visible,
+.global-site-shell.elevate-site :is(a.button, a.ref-button, a.elevate-button-secondary):hover,
+.global-site-shell.elevate-site :is(a.button, a.ref-button, a.elevate-button-secondary):focus-visible {
+  color: var(--site-button-hover-text);
+  background: var(--site-button-yellow);
+  border-color: var(--site-button-yellow);
+}
+
+.global-site-shell.elevate-site button:disabled,
+.global-site-shell.elevate-site input:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Services CTA secondary action intentionally reverses the shared button states. */
+.global-site-shell.elevate-site .elevate-services > main > .elevate-cta .elevate-button-secondary {
+  color: var(--site-button-hover-text);
+  background: var(--site-button-yellow);
+  border-color: var(--site-button-yellow);
+}
+
+.global-site-shell.elevate-site .elevate-services > main > .elevate-cta .elevate-button-secondary:hover,
+.global-site-shell.elevate-site .elevate-services > main > .elevate-cta .elevate-button-secondary:focus-visible {
+  color: #fff;
+  background: var(--site-button-green);
+  border-color: var(--site-button-green);
+}
+
+/* Selected homepage actions intentionally reverse the shared button states. */
+.global-site-shell.elevate-site .elevate-home > .elevate-hero .ref-hero__content > a.ref-button[href="/book"],
+.global-site-shell.elevate-site .elevate-home .elevate-intro__grid .elevate-actions > a.elevate-button-secondary[href="/services"],
+.global-site-shell.elevate-site .elevate-home > main > .elevate-cta a.elevate-button-secondary[href="/services"] {
+  color: var(--site-button-hover-text);
+  background: var(--site-button-yellow);
+  border-color: var(--site-button-yellow);
+}
+
+.global-site-shell.elevate-site .elevate-home > .elevate-hero .ref-hero__content > a.ref-button[href="/book"]:hover,
+.global-site-shell.elevate-site .elevate-home > .elevate-hero .ref-hero__content > a.ref-button[href="/book"]:focus-visible,
+.global-site-shell.elevate-site .elevate-home .elevate-intro__grid .elevate-actions > a.elevate-button-secondary[href="/services"]:hover,
+.global-site-shell.elevate-site .elevate-home .elevate-intro__grid .elevate-actions > a.elevate-button-secondary[href="/services"]:focus-visible,
+.global-site-shell.elevate-site .elevate-home > main > .elevate-cta a.elevate-button-secondary[href="/services"]:hover,
+.global-site-shell.elevate-site .elevate-home > main > .elevate-cta a.elevate-button-secondary[href="/services"]:focus-visible {
+  color: #fff;
+  background: var(--site-button-green);
+  border-color: var(--site-button-green);
+}
+
+/* About-page review refinements. */
+.global-site-shell.elevate-site .elevate-about > main > #methodology {
+  background: #005557;
+}
+
+.global-site-shell.elevate-site .elevate-about > main > .elevate-cta {
+  background: #f5ffff;
+}
+
+.global-site-shell.elevate-site .elevate-about .elevate-split .elevate-actions > a.elevate-button-secondary[href="#methodology"],
+.global-site-shell.elevate-site .elevate-about > main > .elevate-cta a.elevate-button-secondary[href="/contact"] {
+  color: var(--site-button-hover-text);
+  background: var(--site-button-yellow);
+  border-color: var(--site-button-yellow);
+}
+
+.global-site-shell.elevate-site .elevate-about .elevate-split .elevate-actions > a.elevate-button-secondary[href="#methodology"]:hover,
+.global-site-shell.elevate-site .elevate-about .elevate-split .elevate-actions > a.elevate-button-secondary[href="#methodology"]:focus-visible,
+.global-site-shell.elevate-site .elevate-about > main > .elevate-cta a.elevate-button-secondary[href="/contact"]:hover,
+.global-site-shell.elevate-site .elevate-about > main > .elevate-cta a.elevate-button-secondary[href="/contact"]:focus-visible {
+  color: #fff;
+  background: var(--site-button-green);
+  border-color: var(--site-button-green);
+}
+
+/* Success-stories page review refinements. */
+.global-site-shell.elevate-site .elevate-stories > main > .elevate-stats:not(.elevate-stats--light) {
+  background-color: #00574d;
+}
+
+.global-site-shell.elevate-site .elevate-stories > main > .elevate-quote {
+  background-color: #003d33;
+}
+
+.global-site-shell.elevate-site .elevate-stories .elevate-section--tint .elevate-card-grid > .is-dark {
+  background-color: #013736;
+}
+
+.global-site-shell.elevate-site .elevate-stories > main > .elevate-stories__global-reach {
+  background-color: #003d33;
+  background-image:
+    linear-gradient(rgb(0 61 51 / 70%), rgb(0 61 51 / 70%)),
+    url("/images/portfolio-global-reach-building.webp");
+  background-position: center;
+  background-size: cover;
+}
+
+.global-site-shell.elevate-site .elevate-stories > main > .elevate-cta {
+  background: #f0feff;
+}
+
+.global-site-shell.elevate-site .elevate-stories > main > .elevate-cta a.elevate-button-secondary[href="/contact"],
+.global-site-shell.elevate-site .elevate-programmes #long-term .elevate-programme-features > article:nth-child(2) > a.ref-button,
+.global-site-shell.elevate-site .elevate-programmes > main > .elevate-cta a.elevate-button-secondary[href="/contact"] {
+  color: var(--site-button-hover-text);
+  background: var(--site-button-yellow);
+  border-color: var(--site-button-yellow);
+}
+
+.global-site-shell.elevate-site .elevate-stories > main > .elevate-cta a.elevate-button-secondary[href="/contact"]:hover,
+.global-site-shell.elevate-site .elevate-stories > main > .elevate-cta a.elevate-button-secondary[href="/contact"]:focus-visible,
+.global-site-shell.elevate-site .elevate-programmes #long-term .elevate-programme-features > article:nth-child(2) > a.ref-button:hover,
+.global-site-shell.elevate-site .elevate-programmes #long-term .elevate-programme-features > article:nth-child(2) > a.ref-button:focus-visible,
+.global-site-shell.elevate-site .elevate-programmes > main > .elevate-cta a.elevate-button-secondary[href="/contact"]:hover,
+.global-site-shell.elevate-site .elevate-programmes > main > .elevate-cta a.elevate-button-secondary[href="/contact"]:focus-visible {
+  color: #fff;
+  background: var(--site-button-green);
+  border-color: var(--site-button-green);
+}
+
+/* Programmes page review refinements. */
+.global-site-shell.elevate-site .elevate-programmes > main > #masterclasses {
+  background-color: #003d33;
+  background-image:
+    linear-gradient(rgb(0 61 51 / 70%), rgb(0 61 51 / 70%)),
+    url("/images/programmes-masterclasses-jamaican-team.webp");
+  background-position: center;
+  background-size: cover;
+}
+
+.global-site-shell.elevate-site .elevate-programmes > main > .elevate-cta {
+  background: #f2f2f2;
+}
+
+/* Community page review refinements. */
+.global-site-shell.elevate-site .elevate-community > .elevate-hero .about-ref__hero-content > a.ref-button[href="#membership"],
+.global-site-shell.elevate-site .elevate-community > main > .elevate-cta a.elevate-button-secondary[href="/contact?subject=Professional%20Membership"] {
+  color: var(--site-button-hover-text);
+  background: var(--site-button-yellow);
+  border-color: var(--site-button-yellow);
+}
+
+.global-site-shell.elevate-site .elevate-community > .elevate-hero .about-ref__hero-content > a.ref-button[href="#membership"]:hover,
+.global-site-shell.elevate-site .elevate-community > .elevate-hero .about-ref__hero-content > a.ref-button[href="#membership"]:focus-visible,
+.global-site-shell.elevate-site .elevate-community > main > .elevate-cta a.elevate-button-secondary[href="/contact?subject=Professional%20Membership"]:hover,
+.global-site-shell.elevate-site .elevate-community > main > .elevate-cta a.elevate-button-secondary[href="/contact?subject=Professional%20Membership"]:focus-visible {
+  color: #fff;
+  background: var(--site-button-green);
+  border-color: var(--site-button-green);
+}
+
+.global-site-shell.elevate-site .elevate-community > main > .elevate-community__events-section {
+  background-color: #003d33;
+  background-image:
+    linear-gradient(rgb(0 61 51 / 70%), rgb(0 61 51 / 70%)),
+    url("/images/community-kingston-cityscape.webp");
+  background-position: center;
+  background-size: cover;
+}
+
+.global-site-shell.elevate-site .elevate-community__events-section .elevate-events > article:nth-child(odd) {
+  background-color: #125d5e;
+}
+
+.global-site-shell.elevate-site .elevate-community > main > .elevate-cta {
+  background: #fff;
+}
+
+/* FAQ page review refinements. */
+.global-site-shell.elevate-site .elevate-faq .faq-ref__item > summary {
+  border: 2px solid #d9d9d9;
+}
+
+.global-site-shell.elevate-site .elevate-faq .elevate-faq-categories > section > .elevate-faq-list > .faq-ref__item:first-child[open] > summary,
+.global-site-shell.elevate-site .elevate-faq .elevate-faq-categories > section:not(:first-child) > .elevate-faq-list > .faq-ref__item[open] > summary {
+  background: #197b6a;
+}
+
+.global-site-shell.elevate-site .elevate-faq > main > .elevate-cta {
+  background: #f0fffa;
+}
+
+.global-site-shell.elevate-site .elevate-faq > main > .elevate-cta a.elevate-button-secondary[href="/contact"] {
+  color: var(--site-button-hover-text);
+  background: var(--site-button-yellow);
+  border-color: var(--site-button-yellow);
+}
+
+.global-site-shell.elevate-site .elevate-faq > main > .elevate-cta a.elevate-button-secondary[href="/contact"]:hover,
+.global-site-shell.elevate-site .elevate-faq > main > .elevate-cta a.elevate-button-secondary[href="/contact"]:focus-visible {
+  color: #fff;
+  background: var(--site-button-green);
+  border-color: var(--site-button-green);
+}
+
+/* Contact page review refinements. */
+.global-site-shell.elevate-site .elevate-contact > main > .elevate-booking {
+  background-color: #003d33;
+  background-image:
+    linear-gradient(rgb(0 61 51 / 70%), rgb(0 61 51 / 70%)),
+    url("/images/contact-discovery-jamaican-boardroom.webp");
+  background-position: center;
+  background-size: cover;
+}
+
+.global-site-shell.elevate-site .booking-time-control select {
+  padding-left: 48px;
+}
+
+.global-site-shell.elevate-site .elevate-contact > main > .elevate-contact__final {
+  background: #04483d;
+}
+
+.global-site-shell.elevate-site .elevate-contact__final .elevate-contact-final > article:nth-child(2) {
+  background: #0b895f;
 }

@@ -38,7 +38,7 @@ export default function AboutPage() {
     <ElevatePageShell pageSlug="about" className="elevate-about">
       <section className="elevate-section">
         <div className="ref-container">
-          <SplitFeature image="/images/diverse-business-shoot.jpg" imageAlt="CH Elevate consultants collaborating" reverse>
+          <SplitFeature image="/images/jamaican-business-coaching-team.webp" imageAlt="Jamaican business coach facilitating a collaborative team session around a conference table" reverse>
             <p className="ref-kicker">Where expertise meets execution</p>
             <h2>We do not just advise. We stand beside you until the work is done.</h2>
             <p>CH Elevate Consultancy Limited was established with a single conviction: organizations deserve more than a report. They deserve a partner one that combines the rigour of professional consultancy with the humanity of expert coaching and stays engaged until results are genuinely embedded.</p>

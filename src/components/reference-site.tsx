@@ -3,7 +3,7 @@
 import { Headphones, Mail, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 import { BrandLogo } from "@/components/brand-logo";
 import { useSiteContent } from "@/lib/use-site-content";
@@ -29,8 +29,17 @@ type ActivePage =
 
 export function ReferenceHeader({ active }: { active?: ActivePage }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { settings } = useSiteContent();
   const pathname = usePathname();
+
+  useEffect(() => {
+    const updateHeaderState = () => setIsScrolled(window.scrollY > 24);
+
+    updateHeaderState();
+    window.addEventListener("scroll", updateHeaderState, { passive: true });
+    return () => window.removeEventListener("scroll", updateHeaderState);
+  }, []);
   const inferredActive: ActivePage | undefined = pathname === "/"
     ? "home"
     : pathname.startsWith("/about")
@@ -51,7 +60,7 @@ export function ReferenceHeader({ active }: { active?: ActivePage }) {
   const activePage = active ?? inferredActive;
 
   return (
-    <header className="ref-header">
+    <header className={`ref-header ${isScrolled ? "is-scrolled" : ""}`}>
       <div className="ref-container ref-header__inner">
         <Link className="ref-logo" href="/" aria-label={`${settings.brandName} home`}>
           <BrandLogo className="brand-logo__image" priority />

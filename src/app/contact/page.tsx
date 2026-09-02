@@ -74,7 +74,7 @@ export default function ContactPage() {
 
       <ContactReferenceMap />
 
-      <section className="elevate-section elevate-section--navy">
+      <section className="elevate-section elevate-section--navy elevate-contact__final">
         <div className="ref-container">
           <SectionHeading eyebrow="Stay connected" title="A thoughtful, expert response within one business day." align="center" />
           <div className="elevate-contact-final">

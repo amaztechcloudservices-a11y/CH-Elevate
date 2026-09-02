@@ -68,6 +68,7 @@ export default function ServicesPage() {
             eyebrow="Three disciplines that work together"
             title="Transformation requires the right systems and the right people to run them."
             intro={<p>CH Elevate&apos;s service suite combines structured consultancy, process engineering, and personalised coaching into an integrated offering. It provides the strategy and execution capability needed to bring that strategy to life.</p>}
+            align="center"
           />
         </div>
       </section>

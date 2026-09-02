@@ -83,7 +83,7 @@ export default function CommunityPage() {
         </div>
       </section>
 
-      <section className="elevate-section elevate-section--navy">
+      <section className="elevate-section elevate-section--navy elevate-community__events-section">
         <div className="ref-container">
           <SectionHeading
             eyebrow="Upcoming community events"
