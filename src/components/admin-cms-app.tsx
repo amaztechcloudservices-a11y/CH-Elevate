@@ -32,7 +32,7 @@ import type {
   PageContent,
 } from "@/lib/cms";
 
-type Tab =
+export type AdminTab =
   | "overview"
   | "global"
   | "navigation"
@@ -43,6 +43,8 @@ type Tab =
   | "inbox"
   | "availability"
   | "courses";
+
+type Tab = AdminTab;
 
 type Booking = {
   id: string;
@@ -78,8 +80,8 @@ function clone<T>(value: T): T {
   return structuredClone(value);
 }
 
-export function AdminCmsApp() {
-  const [tab, setTab] = useState<Tab>("overview");
+export function AdminCmsApp({ initialTab = "overview" }: { initialTab?: AdminTab }) {
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cms, setCms] = useState<CmsSnapshot | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -97,7 +99,8 @@ export function AdminCmsApp() {
     ])
       .then(async ([cmsResponse, bookingsResponse, submissionsResponse]) => {
         if (cmsResponse.status === 401) {
-          window.location.assign("/admin/login");
+          const destination = `${window.location.pathname}${window.location.search}`;
+          window.location.assign(`/admin/login?next=${encodeURIComponent(destination)}`);
           return;
         }
         if (!cmsResponse.ok) throw new Error("Website controls could not be loaded.");
@@ -149,6 +152,12 @@ export function AdminCmsApp() {
     window.location.assign("/admin/login");
   }
 
+  function selectTab(nextTab: Tab) {
+    setTab(nextTab);
+    const destination = nextTab === "overview" ? "/admin" : `/admin?tab=${nextTab}`;
+    window.history.replaceState(null, "", destination);
+  }
+
   if (!cms) {
     return (
       <main className="admin-loading">
@@ -175,7 +184,7 @@ export function AdminCmsApp() {
               key={id}
               type="button"
               onClick={() => {
-                setTab(id);
+                selectTab(id);
                 setMobileOpen(false);
               }}
             >
@@ -204,7 +213,7 @@ export function AdminCmsApp() {
         </header>
         <div className="cms-admin__content">
           {status.message && <p className={`cms-admin__notice cms-admin__notice--${status.kind}`} role="status">{status.message}</p>}
-          {tab === "overview" && <Overview bookings={bookings} submissions={submissions} cms={cms} setTab={setTab} />}
+          {tab === "overview" && <Overview bookings={bookings} submissions={submissions} cms={cms} setTab={selectTab} />}
           {tab === "global" && <GlobalEditor settings={cms.settings} onChange={(settings) => setCms({ ...cms, settings })} />}
           {tab === "navigation" && <NavigationEditor settings={cms.settings} onChange={(settings) => setCms({ ...cms, settings })} />}
           {tab === "hero" && <HeroEditor slides={cms.heroSlides} onChange={(heroSlides) => setCms({ ...cms, heroSlides })} />}

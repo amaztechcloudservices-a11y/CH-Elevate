@@ -209,6 +209,15 @@ export function ReferenceFooter() {
             </li>
           ))}</ul>
         </div>
+        <div className="ref-footer__access">
+          <h2>Access</h2>
+          <ul>
+            <li><Link href="/portal/register">Student registration</Link></li>
+            <li><Link href="/portal/login">Student portal</Link></li>
+            <li><Link href="/admin?tab=bookings">Booking administration</Link></li>
+            <li><Link href="/admin?tab=courses">Course administration</Link></li>
+          </ul>
+        </div>
         <div>
           <h2>Get in touch</h2>
           <address>{settings.footerAddress.split("\n").map((line) => <span key={line}>{line}<br /></span>)}</address>

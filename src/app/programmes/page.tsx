@@ -3,10 +3,13 @@ import {
   BriefcaseBusiness,
   CalendarRange,
   GraduationCap,
+  LogIn,
   Presentation,
   Sparkles,
+  UserPlus,
   UsersRound,
 } from "lucide-react";
+import Link from "next/link";
 
 import {
   CtaBand,
@@ -140,6 +143,25 @@ export default function ProgrammesPage() {
               <a className="ref-button" href="/book">Explore capacity building</a>
             </article>
           </div>
+        </div>
+      </section>
+
+      <section className="student-registration-entry" id="student-registration">
+        <div className="ref-container student-registration-entry__layout">
+          <div className="student-registration-entry__intro">
+            <p className="ref-kicker">Student registration</p>
+            <h2>Register for a programme and manage your learning in one place.</h2>
+            <p>Create your student account, choose an available course below, and submit your application. Registration details are sent directly to the CH Elevate course administration dashboard for review.</p>
+            <div className="student-registration-entry__actions">
+              <Link href="/portal/register"><UserPlus aria-hidden="true" /> Create student account</Link>
+              <Link href="/portal/login"><LogIn aria-hidden="true" /> Student sign in</Link>
+            </div>
+          </div>
+          <ol className="student-registration-entry__steps" aria-label="Student registration steps">
+            <li><span>01</span><div><h3>Create your account</h3><p>Enter your name, email address, and a secure password.</p></div></li>
+            <li><span>02</span><div><h3>Apply for a course</h3><p>Select an open course below and submit your participant details.</p></div></li>
+            <li><span>03</span><div><h3>Track your registration</h3><p>Sign in to your portal after approval to access course information and materials.</p></div></li>
+          </ol>
         </div>
       </section>
 

@@ -4,12 +4,59 @@ import Link from "next/link";
 import { AdminLoginForm } from "@/components/admin-login-form";
 import { BrandLogo } from "@/components/brand-logo";
 
-export const metadata: Metadata = {
-  title: "Administrator Sign In",
-  robots: { index: false, follow: false },
+type AdminArea = "bookings" | "courses" | "website";
+
+type AdminLoginPageProps = {
+  searchParams: Promise<{ next?: string | string[] }>;
 };
 
-export default function AdminLoginPage() {
+const areaContent: Record<AdminArea, { title: string; heading: string; description: string; buttonLabel: string }> = {
+  bookings: {
+    title: "Booking Administration Sign In",
+    heading: "Booking administration sign in.",
+    description: "Sign in with the client administrator account to review consultation requests, update booking statuses, and manage availability.",
+    buttonLabel: "Sign in to booking administration",
+  },
+  courses: {
+    title: "Course Administration Sign In",
+    heading: "Course administration sign in.",
+    description: "Sign in with the client administrator account to review student registrations, manage courses and cohorts, and administer enrolment records.",
+    buttonLabel: "Sign in to course administration",
+  },
+  website: {
+    title: "Website Administration Sign In",
+    heading: "Website administration sign in.",
+    description: "Sign in with the client administrator account to manage website content, forms, enquiries, bookings, availability, and course registrations.",
+    buttonLabel: "Sign in to website administration",
+  },
+};
+
+function getAdminArea(next: string | string[] | undefined): AdminArea {
+  const destination = Array.isArray(next) ? next[0] : next;
+  if (!destination) return "website";
+
+  try {
+    const tab = new URL(destination, "https://admin.local").searchParams.get("tab");
+    if (tab === "bookings" || tab === "courses") return tab;
+  } catch {
+    return "website";
+  }
+
+  return "website";
+}
+
+export async function generateMetadata({ searchParams }: AdminLoginPageProps): Promise<Metadata> {
+  const { next } = await searchParams;
+  return {
+    title: areaContent[getAdminArea(next)].title,
+    robots: { index: false, follow: false },
+  };
+}
+
+export default async function AdminLoginPage({ searchParams }: AdminLoginPageProps) {
+  const { next } = await searchParams;
+  const content = areaContent[getAdminArea(next)];
+
   return (
     <main className="admin-login">
       <section>
@@ -17,12 +64,9 @@ export default function AdminLoginPage() {
           <BrandLogo className="brand-logo__image" priority />
         </Link>
         <p className="section-label">Secure administration</p>
-        <h1>Manage the entire website.</h1>
-        <p>
-          Sign in with the client administrator account to update content,
-          forms, appointments, contact details, navigation, and availability.
-        </p>
-        <AdminLoginForm />
+        <h1>{content.heading}</h1>
+        <p>{content.description}</p>
+        <AdminLoginForm buttonLabel={content.buttonLabel} />
       </section>
     </main>
   );

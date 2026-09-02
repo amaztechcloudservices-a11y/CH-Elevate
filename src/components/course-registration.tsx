@@ -32,7 +32,7 @@ export function CourseRegistration() {
   return (
     <section className="course-registration" id="available-courses">
       <div className="ref-container">
-        <header className="course-registration__heading"><div><span>Course registration</span><h2>Upcoming courses open for registration.</h2></div><p>Apply as an individual or submit a team roster. Your place is confirmed after review.</p></header>
+        <header className="course-registration__heading"><div><span>Course application</span><h2>Upcoming courses open for registration.</h2></div><p>Apply as an individual or submit a team roster. Your information is sent directly to course administration, and your place is confirmed after review.</p></header>
         {offerings.length === 0 ? <div className="course-registration__empty"><h3>No scheduled courses are open yet.</h3><p>Contact us to discuss private or future cohorts.</p></div> : <div className="course-offering-list">{offerings.map((offering) => {
           const remaining = offering.capacity === null ? null : Math.max(0, offering.capacity - offering.approvedSeats);
           return <article key={offering.id}>
