@@ -144,7 +144,7 @@ export default function Home() {
 
       <section className="elevate-section elevate-section--tint">
         <div className="ref-container">
-          <SplitFeature image="/images/ch-elevate-consultancy-team.png" imageAlt="Consultancy team discussing a client's business roadmap">
+          <SplitFeature image="/images/ch-elevate-jamaican-consultant-client.png" imageAlt="Jamaican female business consultant meeting with a client">
             <p className="ref-kicker">Why CH Elevate?</p>
             <h2>We advise. We build. We deliver.</h2>
             <p>Most consultancies tell you what to do. Most coaches inspire you to act. CH Elevate does both, and we stay until the work is done. Our integrated model combines the precision of expert consultancy with sustained coaching, ensuring every recommendation is implemented, every system is adopted, and every team is empowered to keep performing after we leave.</p>
