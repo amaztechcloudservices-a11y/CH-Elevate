@@ -3,6 +3,7 @@ import { and, asc, eq, gt, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { auditLogs, courseOfferings, courseRegistrations, courses, organisations, profiles, registrationParticipants, user } from "@/db/schema";
 import { courseApplicationSchema } from "@/lib/courses";
 import { sendCourseMail } from "@/server/course-mail";
+import { sendPrimaryInboxMail } from "@/server/site-mail";
 import { getDb } from "@/server/db";
 
 export async function GET() {
@@ -70,7 +71,22 @@ export async function POST(request: Request) {
     return { registration, participants };
   });
   if ("error" in result) return Response.json({ ok: false, error: result.error }, { status: 409 });
-  await sendCourseMail({ to: parsed.data.applicantEmail, subject: "CH Elevate course registration received", text: `Hello ${parsed.data.applicantName},\n\nWe received your registration for ${result.participants.length} participant${result.participants.length === 1 ? "" : "s"}. An administrator will review it and contact you by email.\n\nCH Elevate` });
+  await Promise.all([
+    sendCourseMail({ to: parsed.data.applicantEmail, subject: "CH Elevate course registration received", text: `Hello ${parsed.data.applicantName},\n\nWe received your registration for ${result.participants.length} participant${result.participants.length === 1 ? "" : "s"}. An administrator will review it and contact you by email.\n\nCH Elevate Consultancy Limited\ninfo@ch-elevateconsultancy.com` }),
+    sendPrimaryInboxMail({
+      replyTo: parsed.data.applicantEmail,
+      subject: `New course registration from ${parsed.data.applicantName}`,
+      text: [
+        `Applicant: ${parsed.data.applicantName}`,
+        `Email: ${parsed.data.applicantEmail}`,
+        `Phone: ${parsed.data.applicantPhone || "Not provided"}`,
+        `Organisation: ${parsed.data.organisationName || "Individual registration"}`,
+        `Participants: ${result.participants.length}`,
+        "",
+        "Review this registration in Course administration.",
+      ].join("\n"),
+    }),
+  ]);
     return Response.json({ ok: true, data: { id: result.registration.id, status: result.registration.status } }, { status: 201 });
   } catch {
     return Response.json({ ok: false, error: "Registration could not be stored. Please try again shortly." }, { status: 503 });

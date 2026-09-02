@@ -8,6 +8,7 @@ import {
 } from "@/lib/booking";
 import { getCmsSnapshot } from "@/server/cms";
 import { getDb } from "@/server/db";
+import { sendPrimaryInboxMail, sendWebsiteMail } from "@/server/site-mail";
 
 export async function POST(request: Request) {
   const parsed = bookingRequestSchema.safeParse(await request.json());
@@ -135,6 +136,35 @@ export async function POST(request: Request) {
       { status: 409 },
     );
   }
+
+  const bookingTime = new Intl.DateTimeFormat("en-JM", {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone: availability.timeZone,
+  }).format(booking.startsAt);
+
+  await Promise.all([
+    sendWebsiteMail({
+      to: parsed.data.email,
+      subject: "CH Elevate consultation request received",
+      text: `Hello ${parsed.data.name},\n\nWe received your consultation request for ${bookingTime}. An administrator will review it and confirm the booking by email.\n\nCH Elevate Consultancy Limited\ninfo@ch-elevateconsultancy.com`,
+    }),
+    sendPrimaryInboxMail({
+      replyTo: parsed.data.email,
+      subject: `New consultation request from ${parsed.data.name}`,
+      text: [
+        `Name: ${parsed.data.name}`,
+        `Email: ${parsed.data.email}`,
+        `Phone: ${parsed.data.phone}`,
+        `Company: ${parsed.data.company || "Not provided"}`,
+        `Service: ${parsed.data.service}`,
+        `Requested time: ${bookingTime}`,
+        `Timeline: ${parsed.data.timeline}`,
+        "",
+        parsed.data.priority,
+      ].join("\n"),
+    }),
+  ]);
 
   return Response.json({ ok: true, booking }, { status: 201 });
 }

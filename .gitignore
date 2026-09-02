@@ -36,6 +36,12 @@ yarn-error.log*
 .env*
 !.env.example
 
+# local credential handoff files (never commit)
+/Coolify SSH Key.txt
+/Google Workspace Email Login.txt
+/Hostinger API Token.txt
+/VPS SSH Key.txt
+
 # vercel
 .vercel
 

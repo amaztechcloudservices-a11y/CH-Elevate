@@ -1,8 +1,7 @@
-import nodemailer from "nodemailer";
-
 import { contacts, formSubmissions } from "@/db/schema";
 import { contactSchema } from "@/lib/contact";
 import { getDb } from "@/server/db";
+import { sendPrimaryInboxMail } from "@/server/site-mail";
 
 export async function POST(request: Request) {
   const parsed = contactSchema.safeParse(await request.json());
@@ -44,27 +43,18 @@ export async function POST(request: Request) {
     return created;
   });
 
-  const smtpUrl = process.env.SMTP_URL;
-  const recipient = process.env.CONTACT_TO;
-  const sender = process.env.CONTACT_FROM;
-
-  if (smtpUrl && recipient && sender) {
-    const transporter = nodemailer.createTransport(smtpUrl);
-    await transporter.sendMail({
-      from: sender,
-      to: recipient,
-      replyTo: parsed.data.email,
-      subject: parsed.data.subject,
-      text: [
-        `Name: ${parsed.data.name}`,
-        `Email: ${parsed.data.email}`,
-        `Phone: ${parsed.data.phone ?? "Not provided"}`,
-        `Company: ${parsed.data.company ?? "Not provided"}`,
-        "",
-        parsed.data.message,
-      ].join("\n"),
-    });
-  }
+  await sendPrimaryInboxMail({
+    replyTo: parsed.data.email,
+    subject: `Website enquiry: ${parsed.data.subject}`,
+    text: [
+      `Name: ${parsed.data.name}`,
+      `Email: ${parsed.data.email}`,
+      `Phone: ${parsed.data.phone ?? "Not provided"}`,
+      `Company: ${parsed.data.company ?? "Not provided"}`,
+      "",
+      parsed.data.message,
+    ].join("\n"),
+  });
 
   return Response.json({ ok: true, enquiry }, { status: 201 });
 }
