@@ -217,11 +217,11 @@ export function ReferenceFooter() {
             <li><Link href="/admin/courses">Course administration</Link></li>
           </ul>
         </div>
-        <div>
+        <div className="ref-footer__contact">
           <h2>Get in touch</h2>
           <address>{settings.footerAddress.split("\n").map((line) => <span key={line}>{line}<br /></span>)}</address>
-          <a href={`mailto:${settings.footerEmail}`}>{settings.footerEmail}</a>
-          {hasDialablePhone ? <a href={`tel:${phoneHref}`}>{settings.footerPhone}</a> : <span>{settings.footerPhone}</span>}
+          <a className="ref-footer__email" href={`mailto:${settings.footerEmail}`}>{settings.footerEmail}</a>
+          {hasDialablePhone ? <a className="ref-footer__phone" href={`tel:${phoneHref}`}>{settings.footerPhone}</a> : <span className="ref-footer__phone">{settings.footerPhone}</span>}
           <div className="ref-footer__socials" aria-label="Social media">
             {settings.socialLinks.filter((item) => item.isVisible).map((item) => (
               <a href={item.href} key={item.id} aria-label={item.label} target={item.newTab ? "_blank" : undefined} rel={item.newTab ? "noreferrer" : undefined}>

@@ -62,7 +62,7 @@ export default function ContactPage() {
           <div className="elevate-contact-final">
             <article><h3>Follow CH Elevate</h3><p>LinkedIn: CH Elevate Consultancy<br />Facebook: @CHElevate<br />Instagram: @chelevate<br />YouTube: CH Elevate Consultancy</p></article>
             <article><h3>Our promise to you</h3><p>Every enquiry receives the seriousness, discretion, and professionalism your organisation deserves, whether you are exploring for the first time or ready to begin.</p></article>
-            <article><h3>Priority contact</h3><p>For urgent enquiries related to an active engagement or time-sensitive transformation need:</p><a href="mailto:info@ch-elevateconsultancy.com">info@ch-elevateconsultancy.com</a></article>
+            <article className="elevate-contact-final__priority"><h3>Priority contact</h3><p>For urgent enquiries related to an active engagement or time-sensitive transformation need:</p><a href="mailto:info@ch-elevateconsultancy.com">info@ch-elevateconsultancy.com</a><a href="tel:+18768290413">+1876-829-0413</a></article>
           </div>
         </div>
       </section>

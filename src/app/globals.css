@@ -10266,7 +10266,7 @@ textarea {
 
 /* Contact page review refinements. */
 .global-site-shell.elevate-site .elevate-contact > .elevate-hero .about-ref__hero-wash {
-  background: rgb(6 20 38 / 70%);
+  background: rgb(6 20 38 / 60%);
 }
 
 @media (max-width: 900px) {
@@ -10281,11 +10281,36 @@ textarea {
 
 .global-site-shell.elevate-site .elevate-contact > main > .elevate-contact__locations {
   padding-right: 1px;
-  background-color: #fffdf0;
+  background-color: #fefef6;
 }
 
 .global-site-shell.elevate-site .elevate-contact__locations .elevate-location-grid > article:nth-child(n + 2) {
   background-color: #fff;
+}
+
+.global-site-shell.elevate-site .elevate-contact .elevate-location-grid > article > svg {
+  margin-inline: auto;
+}
+
+.global-site-shell.elevate-site .elevate-contact-final__priority > a {
+  display: block;
+}
+
+.global-site-shell.elevate-site .elevate-contact-final__priority > a + a {
+  margin-top: 6px;
+}
+
+.global-site-shell.elevate-site .ref-footer .ref-footer__phone {
+  color: #008f64;
+  font-weight: 600;
+}
+
+.global-site-shell.elevate-site .ref-footer .ref-footer__contact address {
+  margin-bottom: 10px;
+}
+
+.global-site-shell.elevate-site .ref-footer .ref-footer__email {
+  margin-bottom: 0;
 }
 
 @media (min-width: 901px) {
