@@ -1684,6 +1684,7 @@
 }
 
 .elevate-location-grid h3 {
+  padding-top: 10px;
   color: var(--elevate-navy);
 }
 
@@ -8689,7 +8690,7 @@ textarea {
 
 .contact-ref__map {
   position: relative;
-  height: 447px;
+  height: 360px;
   overflow: hidden;
   background: #e8e8e8;
 }
