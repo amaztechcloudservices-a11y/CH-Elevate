@@ -17,7 +17,6 @@ import {
   IconCards,
   SectionHeading,
 } from "@/components/elevate-sections";
-import { CourseRegistration } from "@/components/course-registration";
 
 export const metadata: Metadata = {
   title: "Programmes",
@@ -81,7 +80,7 @@ const masterclasses = [
 export default function ProgrammesPage() {
   return (
     <ElevatePageShell pageSlug="programmes" className="elevate-programmes">
-      <section className="elevate-section">
+      <section className="elevate-section elevate-programmes__overview">
         <div className="ref-container">
           <SectionHeading
             eyebrow="From rapid sprints to long-term partnerships"
@@ -164,8 +163,6 @@ export default function ProgrammesPage() {
           </ol>
         </div>
       </section>
-
-      <CourseRegistration />
 
       <section className="elevate-tailored" id="tailored">
         <div className="ref-container">

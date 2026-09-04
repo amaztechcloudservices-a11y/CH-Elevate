@@ -1,8 +1,16 @@
 import { describe, expect, it } from "vitest";
+import { formatMoney } from "./courses";
 
 import { canAccessCourseFiles, canMarkCompleted, canTransitionPayment, courseApplicationSchema, decideApprovalStatus, isCertificateEligible, isSubstitutionOpen, orderWaitlist } from "@/lib/courses";
 
 describe("course registration rules", () => {
+  it("displays exact monetary cents with an unambiguous currency code", () => {
+    for (const currency of ["JMD", "USD", "GBP", "EUR", "CAD"]) {
+      expect(formatMoney(12545, currency).replaceAll("\u00a0", " ")).toBe(`${currency} 125.45`);
+      expect(formatMoney(1, currency).replaceAll("\u00a0", " ")).toBe(`${currency} 0.01`);
+      expect(formatMoney(0, currency).replaceAll("\u00a0", " ")).toBe(`${currency} 0.00`);
+    }
+  });
   it("waitlists a hard-cap request that would overbook", () => {
     expect(decideApprovalStatus({ capacityMode: "hard", capacity: 20, approvedSeats: 19, requestedSeats: 2 })).toBe("waitlisted");
   });

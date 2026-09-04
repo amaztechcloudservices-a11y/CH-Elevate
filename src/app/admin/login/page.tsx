@@ -26,7 +26,7 @@ const areaContent: Record<AdminArea, { title: string; heading: string; descripti
   website: {
     title: "Website Administration Sign In",
     heading: "Website administration sign in.",
-    description: "Sign in with the client administrator account to manage website content, forms, enquiries, bookings, availability, and course registrations.",
+    description: "Sign in with the client administrator account to manage website content, images, navigation, forms, and enquiries.",
     buttonLabel: "Sign in to website administration",
   },
 };
@@ -36,7 +36,10 @@ function getAdminArea(next: string | string[] | undefined): AdminArea {
   if (!destination) return "website";
 
   try {
-    const tab = new URL(destination, "https://admin.local").searchParams.get("tab");
+    const url = new URL(destination, "https://admin.local");
+    if (url.pathname === "/admin/bookings") return "bookings";
+    if (url.pathname === "/admin/courses") return "courses";
+    const tab = url.searchParams.get("tab");
     if (tab === "bookings" || tab === "courses") return tab;
   } catch {
     return "website";

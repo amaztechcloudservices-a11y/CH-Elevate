@@ -43,7 +43,7 @@ export default function CommunityPage() {
     <ElevatePageShell pageSlug="community" className="elevate-community">
       <section className="elevate-section">
         <div className="ref-container">
-          <SplitFeature image="/images/two-casual-businessmen-using-tablet.jpg" imageAlt="Professionals learning together" reverse>
+          <SplitFeature image="/images/community-ceo-manager-meeting.webp" imageAlt="A CEO and manager reviewing a business plan together" reverse>
             <p className="ref-kicker">A professional community</p>
             <h2>Performance does not grow in isolation.</h2>
             <p>The CH Elevate Community is a curated network for leaders, project professionals, operations specialists, and organisational change practitioners committed to continuous development, peer learning, and building organisations that deliver.</p>

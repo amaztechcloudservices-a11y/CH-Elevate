@@ -36,7 +36,7 @@ const values = [
 export default function AboutPage() {
   return (
     <ElevatePageShell pageSlug="about" className="elevate-about">
-      <section className="elevate-section">
+      <section className="elevate-section elevate-about__execution">
         <div className="ref-container">
           <SplitFeature image="/images/jamaican-business-coaching-team.webp" imageAlt="Jamaican business coach facilitating a collaborative team session around a conference table" reverse>
             <p className="ref-kicker">Where expertise meets execution</p>
@@ -51,7 +51,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="elevate-section elevate-section--tint">
+      <section className="elevate-section elevate-section--tint elevate-about__story">
         <div className="ref-container">
           <SectionHeading eyebrow="Our story" title="Built from practice. Driven by purpose." intro={<p>CH Elevate was not founded in a boardroom it was born from years of first-hand experience inside organisations struggling to deliver on their potential. Our founding team watched projects fail not for lack of ambition but for lack of structure. We saw talented leaders trapped in reactive operations, unable to build the systems that would set them free. And we decided to do something about it.</p>} />
           <div className="elevate-story">
@@ -69,7 +69,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="elevate-section">
+      <section className="elevate-section elevate-about__values">
         <div className="ref-container">
           <SectionHeading eyebrow="Our values" title="The values that guide every engagement" intro={<p>Six principles shape how we work.</p>} align="center" />
           <IconCards items={values} />

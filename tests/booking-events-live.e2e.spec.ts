@@ -1,0 +1,66 @@
+import { expect, request as playwrightRequest, test } from "@playwright/test";
+import { randomBytes, randomUUID } from "node:crypto";
+import { Pool } from "pg";
+
+test.use({ trace: "off", screenshot: "off" });
+test("signed-in administrator creates a persistent event visible to public clients", async ({ browser }) => {
+  test.skip(process.env.BOOKING_DB_TESTS !== "1", "Opt in to isolated local database fixtures.");
+  const dbUrl = new URL(process.env.DATABASE_URL!);
+  const baseURL = process.env.COURSE_E2E_BASE_URL || "http://localhost:3001";
+  if (!["localhost", "127.0.0.1"].includes(dbUrl.hostname) || dbUrl.port !== "55434" || dbUrl.pathname !== "/premium_web" || new URL(baseURL).hostname !== "localhost") throw new Error("Local fixture targets required.");
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const suffix = randomUUID();
+  const email = `booking-admin-${suffix}@example.test`;
+  const slug = `live-fixture-${suffix}`;
+  const context = await playwrightRequest.newContext({ baseURL });
+  let userId = "";
+  let ui: Awaited<ReturnType<typeof browser.newContext>> | undefined;
+  let publicUi: Awaited<ReturnType<typeof browser.newContext>> | undefined;
+  try {
+    expect((await context.get("/api/admin/booking-events")).status()).toBe(401);
+    const signup = await context.post("/api/auth/sign-up/email", { data: { name: "Fixture Administrator", email, password: randomBytes(24).toString("hex") } });
+    expect(signup.status()).toBe(200);
+    const found = await pool.query('select id from "user" where email=$1', [email]);
+    userId = found.rows[0].id;
+    expect((await context.get("/api/admin/booking-events")).status()).toBe(403);
+    await pool.query("update profiles set role='client_admin' where auth_user_id=$1", [userId]);
+    ui = await browser.newContext({ baseURL, storageState: await context.storageState() });
+    const page = await ui.newPage();
+    await page.goto("/admin/bookings?tab=events");
+    await page.getByRole("button", { name: "Add booking event" }).click();
+    await page.getByLabel("Event title", { exact: true }).fill("Live fixture discovery");
+    await page.getByLabel("Event URL slug").fill(slug);
+    await page.getByLabel("Description", { exact: true }).fill("Temporary test event for verification only.");
+    await page.getByLabel("Agent name", { exact: true }).fill("Fixture Agent");
+    await page.getByLabel("Agent photo URL").fill("/images/home-hero-background-4.png");
+    await page.getByLabel("Session duration").selectOption("60");
+    await page.getByLabel("Publish on the booking page").check();
+    await page.getByRole("button", { name: "Save event", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Live fixture discovery", exact: true })).toBeVisible();
+    await page.reload();
+    const card = page.locator("article").filter({ has: page.getByRole("heading", { name: "Live fixture discovery", exact: true }) });
+    await expect(card).toContainText("60 minutes");
+    const persisted = await pool.query("select data from booking_events where slug=$1", [slug]);
+    expect(persisted.rows[0].data.durationMinutes).toBe(60);
+    publicUi = await browser.newContext({ baseURL });
+    const publicPage = await publicUi.newPage();
+    await publicPage.goto(`/book?event=${slug}`);
+    await expect(publicPage.getByRole("heading", { name: "Live fixture discovery", exact: true })).toBeVisible();
+    await expect(publicPage.getByAltText("Fixture Agent")).toBeVisible();
+    await card.getByRole("button", { name: "Edit", exact: true }).click();
+    await page.getByLabel("Publish on the booking page").uncheck();
+    await page.getByRole("button", { name: "Save event", exact: true }).click();
+    await expect(card).toContainText("Draft");
+    await publicPage.reload();
+    await expect(publicPage.getByRole("heading", { name: "Live fixture discovery", exact: true })).toHaveCount(0);
+  } finally {
+    await ui?.close(); await publicUi?.close(); await context.dispose();
+    const eventRows = await pool.query("select id from booking_events where slug=$1", [slug]);
+    const ids = eventRows.rows.map((row: { id: string }) => row.id);
+    await pool.query("delete from audit_logs where entity_id=any($1::text[]) and actor_auth_user_id=$2", [ids, userId]);
+    await pool.query("delete from booking_events where slug=$1", [slug]);
+    await pool.query("delete from profiles where auth_user_id=$1", [userId]);
+    await pool.query('delete from "user" where email=$1', [email]);
+    await pool.end();
+  }
+});

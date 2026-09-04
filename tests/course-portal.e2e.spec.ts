@@ -2,6 +2,7 @@ import { expect, request as playwrightRequest, test, type APIRequestContext } fr
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { Pool } from "pg";
+import { emptyCourse } from "../src/lib/course-catalogue";
 
 const enabled = process.env.COURSE_E2E === "1";
 const databaseUrl = process.env.DATABASE_URL || "";
@@ -101,7 +102,11 @@ test.describe("CH Elevate course portal", () => {
   });
 
   test("creates catalogue offerings and validates registration windows", async () => {
-    const courseResponse = await admin.post("/api/admin/courses", { data: { kind: "course", title: `Course Portal Test ${suffix}`, slug: `course-portal-test-${suffix}`, summary: "A complete test course for portal verification.", description: "This course verifies registration, access, payments, attendance, and certificates.", isActive: true } });
+    const categoryResponse = await admin.post("/api/admin/course-catalogue", { headers: { origin: baseURL }, data: { action: "category", name: `Portal fixture ${suffix}` } });
+    expect(categoryResponse.status()).toBe(201);
+    const categoryId = (await categoryResponse.json()).data.id;
+    const instructorId = (await pool.query('select profiles.id from profiles join "user" on "user".id=profiles.auth_user_id where "user".email=$1', [adminEmail])).rows[0].id;
+    const courseResponse = await admin.post("/api/admin/course-catalogue", { headers: { origin: baseURL }, data: { action: "create", data: { ...emptyCourse, title: `Course Portal Test ${suffix}`, slug: `course-portal-test-${suffix}`, subtitle: "Portal verification", bannerUrl: "/images/home-hero-background-4.png", categoryId, instructorId, summary: "A complete test course for portal verification.", description: "This course verifies registration, access, payments, attendance, and certificates.", status: "published" } } });
     expect(courseResponse.status(), await courseResponse.text()).toBe(201);
     courseId = (await courseResponse.json()).data.id;
     const startsAt = new Date(Date.now() + 30 * 86400000).toISOString();
@@ -239,10 +244,10 @@ test.describe("CH Elevate course portal", () => {
     const token = invitation!.match(/token(?:=3D|=)([A-Za-z0-9_-]{40,})/)?.[1];
     expect(token).toBeTruthy();
     const invited = await account(invitedEmail, "Invited Student");
-    const accepted = await invited.post("/api/portal/invitations/accept", { data: { token } });
+    const accepted = await invited.post("/api/portal/invitations/accept", { headers: { origin: baseURL }, data: { token } });
     expect(accepted.status(), await accepted.text()).toBe(200);
     expect((await portal(invited)).registrations[0].participant.status).toBe("approved");
-    expect((await invited.post("/api/portal/invitations/accept", { data: { token } })).status()).toBe(409);
+    expect((await invited.post("/api/portal/invitations/accept", { headers: { origin: baseURL }, data: { token } })).status()).toBe(409);
     await invited.dispose();
   });
 
@@ -326,8 +331,7 @@ test.describe("CH Elevate course portal", () => {
     await page.getByLabel("Password").fill(password);
     await page.waitForTimeout(750);
     await page.getByRole("button", { name: "Sign in" }).click();
-    await page.waitForURL("**/portal");
-    await page.getByRole("link", { name: "Profile" }).click();
+    await page.waitForURL("**/portal/profile");
     await expect(page.getByRole("heading", { name: "Personal profile" })).toBeVisible();
     await page.getByLabel("Phone number").fill("+1 876 555 0199");
     await page.getByLabel("Job title").fill("Programme Manager");

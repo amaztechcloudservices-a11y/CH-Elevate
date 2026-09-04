@@ -1,14 +1,14 @@
-import { cmsSnapshotSchema } from "@/lib/cms";
+import { websiteCmsSchema } from "@/lib/website-cms";
 import {
   adminErrorResponse,
   requireClientAdmin,
 } from "@/server/admin-auth";
-import { getCmsSnapshot, saveCmsSnapshot } from "@/server/cms";
+import { getWebsiteCms, saveWebsiteCms } from "@/server/website-cms";
 
 export async function GET(request: Request) {
   try {
     await requireClientAdmin(request);
-    return Response.json({ ok: true, data: await getCmsSnapshot() });
+    return Response.json({ ok: true, data: await getWebsiteCms() }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return adminErrorResponse(error);
   }
@@ -17,7 +17,8 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const { session } = await requireClientAdmin(request);
-    const parsed = cmsSnapshotSchema.safeParse(await request.json());
+    if (request.headers.get("origin") !== new URL(request.url).origin) return Response.json({ ok: false, error: { message: "A same-origin request is required." } }, { status: 403 });
+    const parsed = websiteCmsSchema.safeParse(await request.json().catch(() => null));
 
     if (!parsed.success) {
       return Response.json(
@@ -33,8 +34,8 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const data = await saveCmsSnapshot(parsed.data, session.user.id);
-    return Response.json({ ok: true, data });
+    const data = await saveWebsiteCms(parsed.data, session.user.id);
+    return Response.json({ ok: true, data }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return adminErrorResponse(error);
   }

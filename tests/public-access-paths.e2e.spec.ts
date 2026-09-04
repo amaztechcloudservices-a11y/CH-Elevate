@@ -18,8 +18,8 @@ test("exposes student and administrator access paths from the public website", a
   await expect(page.getByRole("link", { name: "Student sign in" })).toHaveAttribute("href", "/portal/login");
   await expect(page.getByRole("link", { name: "Student Registration", exact: true })).toHaveAttribute("href", "/portal/register");
   await expect(page.getByRole("link", { name: "Student portal", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Booking administration" })).toHaveAttribute("href", "/admin?tab=bookings");
-  await expect(page.getByRole("link", { name: "Course administration" })).toHaveAttribute("href", "/admin?tab=courses");
+  await expect(page.getByRole("link", { name: "Booking administration" })).toHaveAttribute("href", "/admin/bookings");
+  await expect(page.getByRole("link", { name: "Course administration" })).toHaveAttribute("href", "/admin/courses");
   await expect(page.getByRole("heading", { name: "Upcoming courses open for registration." })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
 
@@ -38,6 +38,8 @@ test("identifies and preserves each requested administration section through sig
   }));
   await page.route("**/api/admin/bookings", (route) => route.fulfill({ status: 401, body: "{}" }));
   await page.route("**/api/admin/submissions", (route) => route.fulfill({ status: 401, body: "{}" }));
+  await page.route("**/api/admin/booking-settings", (route) => route.fulfill({ status: 401, body: "{}" }));
+  await page.route("**/api/admin/access", (route) => route.fulfill({ status: 401, body: "{}" }));
 
   for (const area of [
     { tab: "bookings", heading: "Booking administration sign in.", button: "Sign in to booking administration" },
@@ -46,7 +48,7 @@ test("identifies and preserves each requested administration section through sig
     await page.goto(`/admin?tab=${area.tab}`);
     await page.waitForURL(/\/admin\/login\?next=/);
     const destination = new URL(page.url()).searchParams.get("next");
-    expect(destination).toBe(`/admin?tab=${area.tab}`);
+    expect(destination).toBe(`/admin/${area.tab}`);
     await expect(page.getByRole("heading", { name: area.heading })).toBeVisible();
     await expect(page.getByRole("button", { name: area.button })).toBeVisible();
     expect((await page.locator(".admin-login > section").boundingBox())?.width).toBeLessThanOrEqual(500);

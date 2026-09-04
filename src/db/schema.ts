@@ -10,6 +10,33 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { BookingEventDefinition } from "@/lib/booking-events";
+import type { BookingMailKind, BookingMailSettings } from "@/lib/booking-mail";
+
+export const bookingEmailSettings = pgTable("booking_email_settings", {
+  id: text("id").primaryKey(),
+  data: jsonb("data").$type<BookingMailSettings>().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const publicSubmissionLimits = pgTable("public_submission_limits", {
+  scope: text("scope").notNull(),
+  keyHash: text("key_hash").notNull(),
+  windowStartedAt: timestamp("window_started_at", { withTimezone: true }).notNull(),
+  requestCount: integer("request_count").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+}, (table) => [
+  uniqueIndex("public_submission_limits_bucket_idx").on(table.scope, table.keyHash, table.windowStartedAt),
+  index("public_submission_limits_expiry_idx").on(table.expiresAt),
+]);
+
+export const bookingEvents = pgTable("booking_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  slug: text("slug").notNull().unique(),
+  data: jsonb("data").$type<BookingEventDefinition>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
 
 export const staffRole = pgEnum("staff_role", [
   "client_admin",
@@ -28,6 +55,7 @@ export const appointmentStatus = pgEnum("appointment_status", [
   "cancelled",
   "completed",
   "no_show",
+  "rejected",
 ]);
 export const submissionStatus = pgEnum("submission_status", [
   "new",
@@ -97,6 +125,7 @@ export const account = pgTable(
     id: text("id").primaryKey(),
     accountId: text("account_id").notNull(),
     providerId: text("provider_id").notNull(),
+    issuer: text("issuer").notNull(),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -120,8 +149,8 @@ export const account = pgTable(
   },
   (table) => [
     index("account_user_id_idx").on(table.userId),
-    uniqueIndex("account_provider_account_idx").on(
-      table.providerId,
+    uniqueIndex("account_issuer_account_idx").on(
+      table.issuer,
       table.accountId,
     ),
   ],
@@ -169,6 +198,16 @@ export const profiles = pgTable(
   ],
 );
 
+export const studentPosts = pgTable("student_posts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  profileId: uuid("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  isPublished: boolean("is_published").default(false).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [index("student_posts_profile_idx").on(table.profileId, table.createdAt)]);
+
 export const contacts = pgTable(
   "contacts",
   {
@@ -210,6 +249,7 @@ export const appointments = pgTable(
   "appointments",
   {
     id: uuid("id").defaultRandom().primaryKey(),
+    bookingEventId: uuid("booking_event_id").references(() => bookingEvents.id, { onDelete: "restrict" }),
     customerProfileId: uuid("customer_profile_id").references(
       () => profiles.id,
       { onDelete: "set null" },
@@ -227,6 +267,7 @@ export const appointments = pgTable(
     endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
     timeZone: text("time_zone").notNull(),
     status: appointmentStatus("status").default("pending").notNull(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
     notes: text("notes"),
     questionnaire: jsonb("questionnaire")
       .$type<Record<string, string | string[] | boolean>>()
@@ -312,6 +353,18 @@ export const availabilityRules = pgTable(
   (table) => [index("availability_rules_day_idx").on(table.dayOfWeek)],
 );
 
+export const bookingMailDeliveries = pgTable("booking_mail_deliveries", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  bookingId: uuid("booking_id").notNull().references(() => appointments.id, { onDelete: "cascade" }),
+  bookingVersion: text("booking_version").notNull(),
+  kind: text("kind").$type<BookingMailKind>().notNull(),
+  state: text("state").$type<"pending" | "sending" | "accepted" | "failed" | "unknown" | "superseded" | "disabled">().default("pending").notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+  errorCode: text("error_code"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [uniqueIndex("booking_mail_version_kind_idx").on(table.bookingId, table.bookingVersion, table.kind), index("booking_mail_state_idx").on(table.state, table.createdAt)]);
+
 export const bookingBlocks = pgTable(
   "booking_blocks",
   {
@@ -346,16 +399,40 @@ export const auditLogs = pgTable(
   ],
 );
 
+export const courseCategories = pgTable("course_categories", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+}, (table) => [uniqueIndex("course_categories_name_idx").on(table.name)]);
+
 export const courses = pgTable("courses", {
   id: uuid("id").defaultRandom().primaryKey(),
   slug: text("slug").notNull(),
   title: text("title").notNull(),
   summary: text("summary").notNull(),
   description: text("description").notNull(),
+  subtitle: text("subtitle").default("").notNull(),
+  bannerUrl: text("banner_url").default("").notNull(),
+  instructorId: uuid("instructor_id").references(() => profiles.id, { onDelete: "set null" }),
+  categoryId: uuid("category_id").references(() => courseCategories.id, { onDelete: "set null" }),
+  skillLevel: text("skill_level").$type<"all_levels" | "beginner" | "intermediate" | "advanced">().default("all_levels").notNull(),
+  status: text("status").$type<"draft" | "published" | "archived">().default("draft").notNull(),
+  accessType: text("access_type").$type<"free" | "one_time" | "subscription" | "private">().default("free").notNull(),
+  priceCents: integer("price_cents").default(0).notNull(),
+  currency: text("currency").default("JMD").notNull(),
+  subscription: text("subscription").default("").notNull(),
+  enrollmentLimit: integer("enrollment_limit"),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [uniqueIndex("courses_slug_idx").on(table.slug), index("courses_active_idx").on(table.isActive)]);
+
+export const courseModules = pgTable("course_modules", {
+  id: uuid("id").primaryKey(),
+  courseId: uuid("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+  isPublished: boolean("is_published").default(false).notNull(),
+}, (table) => [index("course_modules_order_idx").on(table.courseId, table.sortOrder)]);
 
 export const courseOfferings = pgTable("course_offerings", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -435,6 +512,7 @@ export const courseMaterials = pgTable("course_materials", {
   id: uuid("id").defaultRandom().primaryKey(),
   courseId: uuid("course_id").references(() => courses.id, { onDelete: "cascade" }),
   offeringId: uuid("offering_id").references(() => courseOfferings.id, { onDelete: "cascade" }),
+  recipientProfileId: uuid("recipient_profile_id").references(() => profiles.id, { onDelete: "restrict" }),
   title: text("title").notNull(),
   storageKey: text("storage_key").notNull(),
   originalFilename: text("original_filename").notNull(),
@@ -457,6 +535,18 @@ export const courseInvoices = pgTable("course_invoices", {
   originalFilename: text("original_filename").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [uniqueIndex("course_invoices_reference_idx").on(table.reference), uniqueIndex("course_invoices_storage_key_idx").on(table.storageKey), index("course_invoices_registration_idx").on(table.registrationId)]);
+
+export const courseLessons = pgTable("course_lessons", {
+  id: uuid("id").primaryKey(),
+  moduleId: uuid("module_id").notNull().references(() => courseModules.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+  isPublished: boolean("is_published").default(false).notNull(),
+  contentType: text("content_type").$type<"text" | "video" | "material">().notNull(),
+  text: text("text").default("").notNull(),
+  videoUrl: text("video_url").default("").notNull(),
+  materialId: uuid("material_id").references(() => courseMaterials.id, { onDelete: "set null" }),
+}, (table) => [index("course_lessons_order_idx").on(table.moduleId, table.sortOrder)]);
 
 export const coursePaymentRecords = pgTable("course_payment_records", {
   id: uuid("id").defaultRandom().primaryKey(),

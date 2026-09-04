@@ -1,0 +1,74 @@
+import { expect, test } from "@playwright/test";
+import type { CurriculumSnapshot } from "../src/lib/course-curriculum";
+const courseId = "11111111-1111-4111-8111-111111111111";
+const otherId = "22222222-2222-4222-8222-222222222222";
+test.use({ trace: "off" });
+for (const width of [320, 375, 768, 1024, 1440]) {
+  test(`curriculum editor and student learning at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    const errors: string[] = []; page.on("pageerror", (error) => errors.push(error.message));
+    let snapshot: CurriculumSnapshot = { course: { id: courseId, title: "Leadership practice", updatedAt: "2026-09-03T12:00:00.000Z" }, modules: [], materials: [{ id: otherId, title: "Practice workbook" }] };
+    await page.route("**/api/admin/**", async (route) => {
+      if (new URL(route.request().url()).pathname === "/api/admin/course-curriculum") {
+        if (route.request().method() === "POST") {
+          const input = route.request().postDataJSON(); snapshot = { ...snapshot, modules: input.modules, course: { ...snapshot.course, updatedAt: new Date().toISOString() } };
+          await route.fulfill({ json: { ok: true, updatedAt: snapshot.course.updatedAt } });
+        } else await route.fulfill({ json: { ok: true, data: snapshot } });
+      } else await route.fulfill({ json: { ok: true, data: { courses: [{ id: courseId, title: "Leadership practice" }, { id: otherId, title: "Other course" }], offerings: [], registrations: [], materials: [], recentActivity: [], metrics: { pending: 0, upcoming: 0, waitlisted: 0, outstandingCents: 0 } } } });
+    });
+    await page.goto("/admin/courses");
+    await page.getByRole("button", { name: "Modules & lessons", exact: true }).click();
+    await page.getByLabel("Course curriculum").selectOption(courseId);
+    await page.getByRole("button", { name: "Add module", exact: true }).click();
+    await page.getByLabel("Module title", { exact: true }).fill("Foundations");
+    await page.getByLabel("Publish module", { exact: true }).check();
+    await page.getByRole("button", { name: "Add lesson", exact: true }).click();
+    await page.getByLabel("Lesson title", { exact: true }).fill("Opening exercise");
+    await page.getByLabel("Lesson text", { exact: true }).fill("Reflect on your current team.\n<script>not executable</script>");
+    await page.getByLabel("Publish lesson", { exact: true }).check();
+    await page.getByRole("button", { name: "Save curriculum", exact: true }).click();
+    await expect(page.getByRole("status")).toContainText("Curriculum saved");
+    await page.getByRole("button", { name: "Reload saved curriculum" }).click();
+    await expect(page.getByLabel("Module title", { exact: true })).toHaveValue("Foundations");
+    await page.getByRole("button", { name: "Add module", exact: true }).click();
+    await page.getByLabel("Module title", { exact: true }).nth(1).fill("Practice");
+    await page.getByRole("button", { name: "Move module 2 up" }).click();
+    await expect(page.getByLabel("Module title", { exact: true }).first()).toHaveValue("Practice");
+    await page.getByLabel("Course curriculum").selectOption(otherId);
+    await expect(page.locator(".curriculum-admin").getByRole("alert")).toContainText("Discard unsaved changes");
+    await page.getByRole("button", { name: "Keep editing this course" }).click();
+    await page.getByRole("button", { name: "Materials", exact: true }).click();
+    await page.getByRole("button", { name: "Modules & lessons", exact: true }).click();
+    await expect(page.getByLabel("Module title", { exact: true }).first()).toHaveValue("Practice");
+    await page.getByRole("button", { name: "Remove module", exact: true }).first().click();
+    await page.getByRole("button", { name: "Confirm removal" }).click();
+    const section = page.getByRole("region", { name: "Module 1", exact: true });
+    await section.getByRole("button", { name: "Add lesson", exact: true }).click();
+    const download = page.getByRole("group", { name: "Lesson 2", exact: true });
+    await download.getByLabel("Lesson title", { exact: true }).fill("Workbook");
+    await download.getByLabel("Lesson format").selectOption("material");
+    await download.getByLabel("Downloadable material").selectOption(otherId);
+    await download.getByLabel("Publish lesson", { exact: true }).check();
+    await download.getByRole("button", { name: "Move lesson 2 up" }).click();
+    await page.getByRole("button", { name: "Save curriculum", exact: true }).click();
+    await expect(page.getByRole("status")).toContainText("Curriculum saved");
+    expect(snapshot.modules[0].lessons[0].title).toBe("Workbook");
+    await page.evaluate(() => document.fonts.ready);
+    expect(await page.locator("#curriculum-heading").evaluate((element) => getComputedStyle(element).fontFamily)).toContain("Sora");
+    expect(await page.locator(".curriculum-admin").evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    await page.locator("#curriculum-heading").evaluate((element) => window.scrollTo(0, element.getBoundingClientRect().top + window.scrollY - 200));
+    await page.screenshot({ path: `test-results/curriculum-viewport-${width}.png` });
+    await page.locator(".curriculum-module").screenshot({ path: `test-results/curriculum-editor-${width}.png` });
+    await page.route("**/api/portal?scope=profile", (route) => route.fulfill({ json: { data: { user: { name: "Test Student", email: "student@example.test", timeZone: "America/Jamaica" }, memberships: [], registrations: [] } } }));
+    await page.route("**/api/portal/learning", (route) => route.fulfill({ json: { ok: true, data: [{ id: courseId, title: snapshot.course.title, modules: snapshot.modules.map((item) => ({ ...item, lessons: item.lessons.map((lesson) => ({ ...lesson, downloadUrl: lesson.contentType === "material" ? `/api/portal/downloads/material/${otherId}` : null })) })) }] } }));
+    await page.goto("/portal/profile");
+    await page.getByText("1. Workbook", { exact: false }).click();
+    await expect(page.getByRole("link", { name: "Download course material" })).toHaveAttribute("href", `/api/portal/downloads/material/${otherId}`);
+    await page.getByText("2. Opening exercise", { exact: false }).click();
+    await expect(page.locator(".student-learning__text")).toContainText("<script>not executable</script>");
+    expect(await page.locator(".student-learning script").count()).toBe(0);
+    expect(await page.locator(".student-learning").evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    await page.locator(".student-learning").screenshot({ path: `test-results/student-learning-${width}.png` });
+    expect(errors).toEqual([]);
+  });
+}

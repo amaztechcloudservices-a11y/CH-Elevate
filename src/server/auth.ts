@@ -4,7 +4,7 @@ import { betterAuth } from "better-auth";
 import * as schema from "@/db/schema";
 import { profiles } from "@/db/schema";
 import { getDb } from "@/server/db";
-import { sendCourseMail } from "@/server/course-mail";
+import { sendPasswordResetEmail } from "@/server/password-reset-delivery";
 
 export function createAuth() {
   const baseURL = process.env.BETTER_AUTH_URL;
@@ -31,8 +31,10 @@ export function createAuth() {
     }),
     emailAndPassword: {
       enabled: true,
+      resetPasswordTokenExpiresIn: 1800,
+      revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ user: authUser, url }) => {
-        await sendCourseMail({ to: authUser.email, subject: "Reset your CH Elevate password", text: `Use this secure link to reset your password:\n${url}\n\nIf you did not request this, you can ignore this email.` });
+        await sendPasswordResetEmail(authUser.email, url);
       },
     },
     socialProviders: google ? { google } : undefined,

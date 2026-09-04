@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { Clock3, Globe2, MapPin, Video } from "lucide-react";
+import { Globe2, MapPin, Video } from "lucide-react";
 import { Suspense } from "react";
 
-import { ConsultationForm } from "@/components/consultation-form";
 import { ContactEnquiryForm } from "@/components/contact-enquiry-form";
 import {
   ContactReferenceDetails,
@@ -15,7 +14,7 @@ import {
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Contact CH Elevate, send a confidential enquiry, or book a complimentary 30-minute discovery call.",
+  description: "Contact CH Elevate and send a confidential enquiry to our consultancy team.",
 };
 
 export default function ContactPage() {
@@ -39,24 +38,7 @@ export default function ContactPage() {
         </div>
       </section>
 
-      <section className="elevate-section elevate-booking">
-        <div className="ref-container elevate-booking__grid">
-          <div>
-            <p className="ref-kicker ref-kicker--light">Complimentary discovery call</p>
-            <h2>A 30-minute conversation that could change your organisation.</h2>
-            <p>The CH Elevate Discovery Call is the starting point for every engagement. Share your context and current challenges, explore which service or programme may fit, ask about our methodology and approach, and receive an honest expert perspective on what transformation could look like.</p>
-            <p>There is no obligation, no sales pitch, and no pressure. We invest in the conversation because the right engagement begins with the right conversation.</p>
-            <ul>
-              <li><Clock3 aria-hidden="true" />30 minutes with a senior consultant</li>
-              <li><Globe2 aria-hidden="true" />All time zones accommodated</li>
-              <li><Video aria-hidden="true" />Secure video consultation</li>
-            </ul>
-          </div>
-          <div className="elevate-booking__form"><ConsultationForm /></div>
-        </div>
-      </section>
-
-      <section className="elevate-section">
+      <section className="elevate-section elevate-contact__locations">
         <div className="ref-container">
           <SectionHeading
             eyebrow="Where to find us"

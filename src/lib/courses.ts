@@ -38,7 +38,12 @@ export function canAccessCourseFiles(status: RegistrationStatus) {
 }
 
 export function isCertificateEligible(attendance: string, completedAt: Date | null) {
-  return attendance === "attended" && completedAt instanceof Date;
+  return attendance === "attended" && completedAt instanceof Date && Number.isFinite(completedAt.getTime());
+}
+
+export function isCurrentCourseCertificate(certificate: { revokedAt: Date | null; completedAt: Date }, participant: { status: string; attendance: string; completedAt: Date | null }) {
+  return !certificate.revokedAt && participant.status === "completed" && isCertificateEligible(participant.attendance, participant.completedAt)
+    && certificate.completedAt.getTime() === participant.completedAt!.getTime();
 }
 
 export function isSubstitutionOpen(cutoffAt: Date | null, now = new Date()) {
@@ -67,5 +72,5 @@ export function orderWaitlist<T extends { createdAt: Date; id: string }>(registr
 }
 
 export function formatMoney(cents: number, currency = "JMD") {
-  return new Intl.NumberFormat("en-JM", { style: "currency", currency, maximumFractionDigits: 0 }).format(cents / 100);
+  return new Intl.NumberFormat("en-JM", { style: "currency", currency, currencyDisplay: "code", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100);
 }

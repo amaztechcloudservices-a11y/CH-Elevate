@@ -55,19 +55,33 @@ export function CmsReferenceHero({
       aria-label={`${pageSlug} hero`}
     >
       {slides.map((item, slideIndex) => (
-          <Image
-            className={`${isHome ? "ref-hero__image" : ""} cms-hero__image ${slideIndex === safeIndex ? "is-active" : ""}`}
-            src={item.imageUrl}
-            alt=""
-            aria-hidden={slideIndex !== safeIndex}
-            fill
-            sizes="100vw"
-            priority={slideIndex === 0}
-            unoptimized
-            key={item.id}
-          />
+        <Image
+          className={`${isHome ? "ref-hero__image" : ""} cms-hero__image ${slideIndex === safeIndex ? "is-active" : ""}`}
+          src={item.imageUrl}
+          alt=""
+          aria-hidden={slideIndex !== safeIndex}
+          fill
+          sizes="100vw"
+          priority={slideIndex === 0}
+          unoptimized
+          key={item.id}
+        />
       ))}
-      <div className={isHome ? "ref-hero__overlay" : "about-ref__hero-wash"} aria-hidden="true" />
+      {isHome && safeIndex === 0 && (
+        <video
+          className="ref-hero__video cms-hero__video"
+          autoPlay
+          muted
+          playsInline
+          preload="metadata"
+          poster={slide.imageUrl}
+          aria-hidden="true"
+          tabIndex={-1}
+        >
+          <source src="/videos/home-hero-walk-in.mp4" type="video/mp4" />
+        </video>
+      )}
+      {!isHome && <div className="about-ref__hero-wash" aria-hidden="true" />}
       <div className={`${isHome ? "ref-container ref-hero__content" : "ref-container about-ref__hero-content"} cms-hero__content`}>
         {slide.eyebrow && <p className={isHome ? "ref-kicker ref-kicker--light" : "ref-kicker ref-kicker--light"}>{slide.eyebrow}</p>}
         <h1>{slide.title}</h1>

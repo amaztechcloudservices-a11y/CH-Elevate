@@ -1,10 +1,15 @@
-import { and, asc, eq, gt, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
 
 import { auditLogs, courseOfferings, courseRegistrations, courses, organisations, profiles, registrationParticipants, user } from "@/db/schema";
 import { courseApplicationSchema } from "@/lib/courses";
 import { sendCourseMail } from "@/server/course-mail";
 import { sendPrimaryInboxMail } from "@/server/site-mail";
 import { getDb } from "@/server/db";
+import { PublicRateLimitError, consumePublicSubmissionLimits } from "@/server/public-rate-limit";
+import { JsonBodyError, readBoundedJson } from "@/server/request-body";
+
+const COURSE_BODY_LIMIT = 128 * 1024;
+const COURSE_RATE_WINDOW = 60 * 60 * 1000;
 
 export async function GET() {
   if (!process.env.DATABASE_URL) return Response.json({ ok: true, data: [] });
@@ -23,7 +28,7 @@ export async function GET() {
     .from(courseOfferings)
     .innerJoin(courses, eq(courses.id, courseOfferings.courseId))
     .leftJoin(registrationParticipants, eq(registrationParticipants.offeringId, courseOfferings.id))
-    .where(and(eq(courses.isActive, true), eq(courseOfferings.isPublished, true), eq(courseOfferings.isCancelled, false), gt(courseOfferings.startsAt, now), or(isNull(courseOfferings.registrationOpensAt), lt(courseOfferings.registrationOpensAt, now))))
+    .where(and(eq(courses.isActive, true), eq(courses.status, "published"), ne(courses.accessType, "private"), eq(courseOfferings.isPublished, true), eq(courseOfferings.isCancelled, false), gt(courseOfferings.startsAt, now), or(isNull(courseOfferings.registrationOpensAt), lt(courseOfferings.registrationOpensAt, now)), or(isNull(courseOfferings.registrationClosesAt), gt(courseOfferings.registrationClosesAt, now))))
     .groupBy(courseOfferings.id, courses.id)
     .orderBy(asc(courseOfferings.startsAt));
     return Response.json({ ok: true, data: rows });
@@ -35,13 +40,19 @@ export async function GET() {
 export async function POST(request: Request) {
   if (!process.env.DATABASE_URL) return Response.json({ ok: false, error: "Registration storage is not configured." }, { status: 503 });
   try {
-    const parsed = courseApplicationSchema.safeParse(await request.json());
+    const parsed = courseApplicationSchema.safeParse(await readBoundedJson(request, COURSE_BODY_LIMIT));
   if (!parsed.success) return Response.json({ ok: false, error: "Please review the registration details.", issues: parsed.error.issues }, { status: 422 });
+  await consumePublicSubmissionLimits([
+    { scope: "course_global", key: "all", limit: 200, windowMs: COURSE_RATE_WINDOW },
+    { scope: "course_identity", key: `${parsed.data.offeringId}:${parsed.data.applicantEmail.toLowerCase()}`, limit: 20, windowMs: COURSE_RATE_WINDOW },
+  ]);
   const database = getDb();
   const result = await database.transaction(async (tx) => {
     const [offering] = await tx.select().from(courseOfferings).where(eq(courseOfferings.id, parsed.data.offeringId)).limit(1);
     const now = new Date();
     if (!offering?.isPublished || offering.isCancelled || offering.startsAt <= now || (offering.registrationOpensAt && offering.registrationOpensAt > now) || (offering.registrationClosesAt && offering.registrationClosesAt < now)) return { error: "Registration is not open for this course." as const };
+    const [course] = await tx.select().from(courses).where(eq(courses.id, offering.courseId)).for("share");
+    if (!course?.isActive || course.status !== "published" || course.accessType === "private") return { error: "Registration is not open for this course." as const };
     const normalizedEmails = [...new Set(parsed.data.participants.map((participant) => participant.email))];
     if (normalizedEmails.length !== parsed.data.participants.length) return { error: "Each participant must use a unique email address." as const };
     const duplicates = await tx.select({ email: registrationParticipants.email }).from(registrationParticipants).where(and(eq(registrationParticipants.offeringId, offering.id), inArray(registrationParticipants.emailNormalized, normalizedEmails)));
@@ -50,7 +61,7 @@ export async function POST(request: Request) {
       .select({ email: user.email, profileId: profiles.id })
       .from(user)
       .innerJoin(profiles, eq(profiles.authUserId, user.id))
-      .where(and(inArray(user.email, normalizedEmails), eq(profiles.role, "customer")));
+      .where(and(inArray(user.email, normalizedEmails), eq(user.emailVerified, true), eq(profiles.role, "customer"), eq(profiles.active, true)));
     const profileByEmail = new Map(existingProfiles.map((row) => [row.email.toLowerCase(), row.profileId]));
     let organisationId: string | null = null;
     if (parsed.data.organisationName) {
@@ -88,7 +99,9 @@ export async function POST(request: Request) {
     }),
   ]);
     return Response.json({ ok: true, data: { id: result.registration.id, status: result.registration.status } }, { status: 201 });
-  } catch {
+  } catch (error) {
+    if (error instanceof JsonBodyError) return Response.json({ ok: false, error: error.code === "too_large" ? "The course registration request is too large." : "The course registration request must contain valid JSON." }, { status: error.status, headers: { "Cache-Control": "no-store" } });
+    if (error instanceof PublicRateLimitError) return Response.json({ ok: false, error: "Too many course registration requests. Please wait before trying again." }, { status: 429, headers: { "Cache-Control": "no-store", "Retry-After": String(error.retryAfterSeconds) } });
     return Response.json({ ok: false, error: "Registration could not be stored. Please try again shortly." }, { status: 503 });
   }
 }

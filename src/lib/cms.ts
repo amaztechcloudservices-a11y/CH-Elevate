@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { imageReferenceSchema } from "@/lib/image-reference";
 
 export const navigationItemSchema = z.object({
   id: z.string().min(1).max(80),
@@ -31,7 +32,7 @@ export const heroSlideSchema = z.object({
   eyebrow: z.string().trim().max(100).default(""),
   title: z.string().trim().min(1).max(180),
   description: z.string().trim().max(500),
-  imageUrl: z.string().trim().min(1).max(500),
+  imageUrl: imageReferenceSchema(500, true),
   primaryCtaLabel: z.string().trim().max(80).default(""),
   primaryCtaHref: z.string().trim().max(300).default(""),
   sortOrder: z.number().int().min(0).max(1000),
@@ -42,7 +43,7 @@ export const contentItemSchema = z.object({
   id: z.string().min(1).max(80),
   title: z.string().trim().max(180),
   text: z.string().trim().max(1000),
-  imageUrl: z.string().trim().max(500).default(""),
+  imageUrl: imageReferenceSchema(500).default(""),
   href: z.string().trim().max(300).default(""),
 });
 
@@ -61,7 +62,7 @@ export const pageSectionSchema = z.object({
   eyebrow: z.string().trim().max(100).default(""),
   heading: z.string().trim().max(220).default(""),
   body: z.string().trim().max(5000).default(""),
-  imageUrl: z.string().trim().max(500).default(""),
+  imageUrl: imageReferenceSchema(500).default(""),
   ctaLabel: z.string().trim().max(80).default(""),
   ctaHref: z.string().trim().max(300).default(""),
   items: z.array(contentItemSchema).max(24).default([]),
@@ -200,7 +201,7 @@ export const defaultCmsSnapshot: CmsSnapshot = {
       title: "Elevate Your Organisation. Deliver with Confidence.",
       description:
         "For leaders who mean business. Build the systems, skills, and leadership capacity that drive measurable, lasting results.",
-      imageUrl: "/images/business-meeting.jpg",
+      imageUrl: "/images/home-hero-background-4.png",
       primaryCtaLabel: "Book a discovery call",
       primaryCtaHref: "/book",
       sortOrder: 0,
@@ -261,7 +262,7 @@ export const defaultCmsSnapshot: CmsSnapshot = {
       eyebrow: "",
       title: "Let's Talk. Your Transformation Begins With a Conversation.",
       description: "Reach out and expect a response within one business day.",
-      imageUrl: "/images/a-businessman-using-a-smartphone.jpg",
+      imageUrl: "/images/contact-hero-jamaican-receptionist.webp",
       primaryCtaLabel: "",
       primaryCtaHref: "",
       sortOrder: 0,
@@ -273,7 +274,7 @@ export const defaultCmsSnapshot: CmsSnapshot = {
       eyebrow: "Programmes",
       title: "Structured Programmes Designed to Deliver Measurable Growth",
       description: "From intensive diagnostics to long-term transformation partnerships.",
-      imageUrl: "/images/business-team-talk-eat-and-drink-on-stairs.jpg",
+      imageUrl: "/images/programmes-hero-diverse-adult-students.webp",
       primaryCtaLabel: "Find your programme",
       primaryCtaHref: "#individual",
       sortOrder: 0,
@@ -285,7 +286,7 @@ export const defaultCmsSnapshot: CmsSnapshot = {
       eyebrow: "Join the community",
       title: "Where Leaders Grow Together",
       description: "A professional community for leaders, practitioners, and change-makers.",
-      imageUrl: "/images/two-casual-businessmen-using-tablet.jpg",
+      imageUrl: "/images/community-hero-diverse-business-leaders.webp",
       primaryCtaLabel: "Explore membership",
       primaryCtaHref: "#membership",
       sortOrder: 0,

@@ -44,6 +44,7 @@ export async function getCmsSnapshot(): Promise<CmsSnapshot> {
 export async function saveCmsSnapshot(
   snapshot: CmsSnapshot,
   actorAuthUserId: string,
+  scope: "all" | "website" = "all",
 ) {
   const parsed = cmsSnapshotSchema.parse(snapshot);
   const database = getDb();
@@ -51,6 +52,8 @@ export async function saveCmsSnapshot(
 
   await database.transaction(async (transaction) => {
     for (const [field, key] of Object.entries(documentMap)) {
+      // Website publishing must never overwrite separately managed booking rules.
+      if (scope === "website" && field === "availability") continue;
       const data = parsed[field as keyof CmsSnapshot] as unknown as Record<
         string,
         unknown

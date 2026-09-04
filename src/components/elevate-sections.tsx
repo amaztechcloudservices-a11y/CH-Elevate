@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import { CmsPageSections } from "@/components/cms-page-sections";
 import { CmsReferenceHero } from "@/components/cms-reference-hero";
+import { CourseRegistration } from "@/components/course-registration";
 import {
   ReferenceNewsletter,
 } from "@/components/reference-site";
@@ -34,7 +35,7 @@ export function ElevatePageShell({
   return (
     <div className={`busima-home elevate-site ${className}`.trim()}>
       <CmsReferenceHero pageSlug={pageSlug} className="elevate-hero" />
-      <main>{children}</main>
+      <main>{children}<CourseRegistration pageSlug={pageSlug} /></main>
       <CmsPageSections pageSlug={pageSlug} />
       {newsletter && <ReferenceNewsletter />}
     </div>

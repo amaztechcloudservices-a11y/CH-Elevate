@@ -76,7 +76,7 @@ export default function PortfolioPage() {
         { value: "100%", label: "Target: every Transformation Partnership demonstrates measurable capability gains" },
       ]} note="Illustrative figures from the supplied copy blueprint; client verification is required before publication as factual performance data." />
 
-      <section className="elevate-section">
+      <section className="elevate-section elevate-stories__featured">
         <div className="ref-container">
           <SectionHeading eyebrow="Featured story" title="Transforming project delivery in financial services" intro={<p><strong>Corporate / Enterprise · PMO Consultancy & Training</strong></p>} />
           <div className="elevate-case-feature">
@@ -105,7 +105,7 @@ export default function PortfolioPage() {
         attribution="Chief Executive Officer, Regional Financial Services Firm"
       />
 
-      <section className="elevate-section elevate-section--tint">
+      <section className="elevate-section elevate-section--tint elevate-stories__more">
         <div className="ref-container">
           <SectionHeading eyebrow="More success stories" title="Across every sector we serve" align="center" />
           <IconCards items={cases} columns={2} />

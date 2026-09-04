@@ -100,7 +100,7 @@ export default function Home() {
         ]}
       />
 
-      <section className="elevate-section">
+      <section className="elevate-section elevate-home__services">
         <div className="ref-container">
           <SectionHeading
             eyebrow="What we do"
@@ -130,7 +130,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="elevate-section">
+      <section className="elevate-section elevate-home__audiences">
         <div className="ref-container">
           <SectionHeading
             eyebrow="Who we serve"
@@ -142,7 +142,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="elevate-section elevate-section--tint">
+      <section className="elevate-section elevate-section--tint elevate-home__why">
         <div className="ref-container">
           <SplitFeature image="/images/ch-elevate-jamaican-consultant-client.png" imageAlt="Jamaican female business consultant meeting with a client">
             <p className="ref-kicker">Why CH Elevate?</p>

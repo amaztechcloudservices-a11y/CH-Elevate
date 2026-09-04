@@ -155,7 +155,7 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      <section className="elevate-section elevate-section--navy">
+      <section className="elevate-section elevate-section--navy elevate-services__credentials">
         <div className="ref-container">
           <SectionHeading
             eyebrow="Our methodological credentials"
