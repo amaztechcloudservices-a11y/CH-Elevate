@@ -1,6 +1,7 @@
 import { eq, inArray, sql } from "drizzle-orm";
 import { auditLogs, cmsDocuments } from "@/db/schema";
 import { defaultWebsiteCms, websiteCmsSchema, type WebsiteCmsSnapshot } from "@/lib/website-cms";
+import type { FormDefinition } from "@/lib/cms";
 import { getDb } from "@/server/db";
 
 const documents = { settings: "global", heroSlides: "hero_slides", pages: "pages", forms: "forms" } as const;
@@ -15,6 +16,11 @@ export async function getWebsiteCms(): Promise<WebsiteCmsSnapshot> {
   }
   // Invalid stored content fails closed; never return defaults that could overwrite it on save.
   return websiteCmsSchema.parse(candidate);
+}
+
+export async function getActiveWebsiteForm(key: "contact" | "newsletter"): Promise<FormDefinition | null> {
+  const form = (await getWebsiteCms()).forms.find((candidate) => candidate.key === key);
+  return form?.isActive ? form : null;
 }
 
 export async function saveWebsiteCms(snapshot: WebsiteCmsSnapshot, actor: string) {

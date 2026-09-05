@@ -107,6 +107,7 @@ export function ReferenceHeader({ active }: { active?: ActivePage }) {
 export function ReferenceNewsletter() {
   const { forms } = useSiteContent();
   const newsletter = forms.find((form) => form.key === "newsletter");
+  const emailField = newsletter?.fields.find((field) => field.name === "email");
   const [status, setStatus] = useState<{
     kind: "idle" | "submitting" | "success" | "error";
     message: string;
@@ -125,7 +126,7 @@ export function ReferenceNewsletter() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: data.get("email"),
-          consent: true,
+          consent: data.get("consent") === "on",
           source: "website-newsletter",
         }),
       });
@@ -141,7 +142,7 @@ export function ReferenceNewsletter() {
       form.reset();
       setStatus({
         kind: "success",
-        message: "You are subscribed. Thank you.",
+        message: newsletter?.successMessage ?? "You are subscribed. Thank you.",
       });
     } catch (error) {
       setStatus({
@@ -154,13 +155,16 @@ export function ReferenceNewsletter() {
     }
   }
 
+  if (newsletter && !newsletter.isActive) return null;
+
   return (
     <section className="ref-newsletter">
       <div className="ref-container ref-newsletter__inner">
         <h2>Join the CH Elevate briefing for practical ideas, tools, and upcoming events.</h2>
-        <form onSubmit={handleSubmit}>
-          <label className="sr-only" htmlFor="ref-newsletter-email">Email address</label>
-          <input id="ref-newsletter-email" type="email" name="email" placeholder="Email" required />
+        <form onSubmit={handleSubmit} aria-busy={status.kind === "submitting"}>
+          <label className="sr-only" htmlFor="ref-newsletter-email">{emailField?.label ?? "Email address"}</label>
+          <input id="ref-newsletter-email" type="email" name="email" placeholder={emailField?.placeholder || "Email"} required />
+          <label className="ref-newsletter__consent"><input name="consent" type="checkbox" required /><span>I agree to receive the CH Elevate briefing. See our <Link href="/privacy">Privacy Policy</Link>.</span></label>
           <button className="ref-button" type="submit" disabled={status.kind === "submitting"}>
             <Mail aria-hidden="true" /> {status.kind === "submitting" ? "Signing up…" : (newsletter?.submitLabel ?? "Sign up")}
           </button>

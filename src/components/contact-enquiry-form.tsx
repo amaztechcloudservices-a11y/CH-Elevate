@@ -52,7 +52,7 @@ export function ContactEnquiryForm() {
           </button>
         ))}
       </div>
-      <ContactReferenceForm defaultSubject={subject} key={subject} />
+      <ContactReferenceForm defaultSubject={subject} onSubjectChange={setSubject} />
     </div>
   );
 }

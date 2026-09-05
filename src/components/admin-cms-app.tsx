@@ -378,7 +378,7 @@ function FormsEditor({ forms, onChange }: { forms: FormDefinition[]; onChange: (
   const patch = (values: Partial<FormDefinition>) => { const next = clone(forms); next[formIndex] = { ...next[formIndex], ...values }; onChange(next); };
   return (
     <>
-      <PanelHeading eyebrow="Form system" title="Control every form and field." copy="Edit labels, placeholders, required fields, select options, submit labels, success messages, and whether each form accepts submissions." />
+      <PanelHeading eyebrow="Form system" title="Manage public enquiry forms." copy="Edit visitor-facing labels, placeholders, select options, submit labels, success messages, and whether each form accepts submissions. Operationally required identity and message fields stay required." />
       <div className="cms-toolbar"><label><span>Form</span><select value={key} onChange={(e) => setKey(e.target.value)}>{forms.map((item) => <option key={item.key} value={item.key}>{item.name}</option>)}</select></label></div>
       <section className="cms-card cms-form-grid">
         <label><span>Form name</span><input value={form.name} onChange={(e) => patch({ name: e.target.value })} /></label>
@@ -394,8 +394,8 @@ function FormsEditor({ forms, onChange }: { forms: FormDefinition[]; onChange: (
             <span className="cms-list-editor__number">{index + 1}</span>
             <label><span>Label</span><input value={field.label} onChange={(e) => { const next = clone(form.fields); next[index].label = e.target.value; patch({ fields: next }); }} /></label>
             <label><span>Placeholder</span><input value={field.placeholder} onChange={(e) => { const next = clone(form.fields); next[index].placeholder = e.target.value; patch({ fields: next }); }} /></label>
-            <label><span>Options (one per line)</span><textarea value={field.options.join("\n")} onChange={(e) => { const next = clone(form.fields); next[index].options = e.target.value.split("\n").map((value) => value.trim()).filter(Boolean); patch({ fields: next }); }} /></label>
-            <label className="cms-check"><input type="checkbox" checked={field.isRequired} onChange={(e) => { const next = clone(form.fields); next[index].isRequired = e.target.checked; patch({ fields: next }); }} /><span>Required</span></label>
+            {(field.type === "select" || field.type === "radio") && <label><span>Options (one per line)</span><textarea value={field.options.join("\n")} onChange={(e) => { const next = clone(form.fields); next[index].options = e.target.value.split("\n").map((value) => value.trim()).filter(Boolean); patch({ fields: next }); }} /></label>}
+            <label className="cms-check"><input type="checkbox" checked={field.isRequired} disabled={["name", "email", "subject", "message"].includes(field.name)} onChange={(e) => { const next = clone(form.fields); next[index].isRequired = e.target.checked; patch({ fields: next }); }} /><span>Required{["name", "email", "subject", "message"].includes(field.name) ? " for operation" : ""}</span></label>
           </article>
         ))}</div>
       </section>

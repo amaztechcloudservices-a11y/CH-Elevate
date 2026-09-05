@@ -7773,6 +7773,25 @@ textarea {
   line-height: 1.2;
 }
 
+.ref-newsletter__consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: rgb(255 255 255 / 88%);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.ref-newsletter__consent input {
+  width: 16px;
+  min-height: 16px;
+  margin-top: 1px;
+  padding: 0;
+  accent-color: var(--ref-yellow);
+}
+
+.ref-newsletter__consent a { color: inherit; text-decoration: underline; }
+
 .ref-footer__help strong {
   margin-top: 0;
   color: var(--ref-blue-bright);
@@ -8694,6 +8713,34 @@ textarea {
   overflow: hidden;
   background: #e8e8e8;
 }
+
+.contact-ref__consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--ref-copy);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.contact-ref__consent input {
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  accent-color: var(--ref-teal);
+}
+
+.contact-ref__consent a { color: var(--ref-teal); font-weight: 650; }
+
+.contact-ref__unavailable {
+  margin-top: 20px;
+  padding: 20px;
+  border-left: 4px solid var(--ref-yellow);
+  background: #fffdf0;
+}
+
+.contact-ref__unavailable p { margin: 0 0 8px; }
+.contact-ref__unavailable a { color: var(--ref-teal); font-weight: 700; }
 
 .contact-ref__map iframe {
   width: 100%;
