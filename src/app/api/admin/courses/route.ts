@@ -6,7 +6,8 @@ import {
   accountInvitations, auditLogs, courseCertificates, courseMaterials, courseOfferings, coursePaymentRecords,
   courseRegistrations, courses, organisationMemberships, organisations, profiles, registrationParticipants, user,
 } from "@/db/schema";
-import { canMarkCompleted, canTransitionPayment, decideApprovalStatus, isCertificateEligible, type RegistrationStatus } from "@/lib/courses";
+import { canMarkCompleted, decideApprovalStatus, isCertificateEligible, type RegistrationStatus } from "@/lib/courses";
+import { applyPaymentTransaction, outstandingByCurrency } from "@/lib/course-payments";
 import { adminErrorResponse, requireClientAdmin } from "@/server/admin-auth";
 import { sendCourseMail } from "@/server/course-mail";
 import { getDb } from "@/server/db";
@@ -28,7 +29,7 @@ const offeringSchema = z.object({
 
 const patchSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("registration_status"), id: z.uuid(), participantId: z.uuid().optional(), status: z.enum(["approved", "waitlisted", "rejected", "cancelled", "completed"]), overrideCapacity: z.boolean().default(false) }).strict(),
-  z.object({ action: z.literal("payment"), id: z.uuid(), paymentStatus: z.enum(["unpaid", "invoiced", "partially_paid", "paid", "waived", "refunded"]), paymentReference: z.string().trim().max(120).optional().default("") }).strict(),
+  z.object({ action: z.literal("payment"), id: z.uuid(), paymentStatus: z.enum(["unpaid", "invoiced", "partially_paid", "paid", "waived", "refunded"]), transactionCents: z.number().int().min(0).max(2147483647).optional(), paymentReference: z.string().trim().max(120).optional().default("") }).strict(),
   z.object({ action: z.literal("attendance"), participantIds: z.array(z.uuid()).min(1).max(1000), attendance: z.enum(["not_recorded", "attended", "partially_attended", "no_show"]), complete: z.boolean().default(false) }).strict(),
   z.object({ action: z.literal("certificate"), participantId: z.uuid() }).strict(),
   z.object({ action: z.literal("archive_material"), id: z.uuid(), archived: z.boolean() }).strict(),
@@ -46,14 +47,14 @@ export async function GET(request: Request) {
     const [courseRows, offeringRows, registrationRows, materialRows, recentActivity] = await Promise.all([
       database.select().from(courses).orderBy(asc(courses.title)),
       database.select({ offering: courseOfferings, courseTitle: courses.title, approvedSeats: sql<number>`count(${registrationParticipants.id}) filter (where ${registrationParticipants.status} in ('approved','completed'))::int` }).from(courseOfferings).innerJoin(courses, eq(courses.id, courseOfferings.courseId)).leftJoin(registrationParticipants, eq(registrationParticipants.offeringId, courseOfferings.id)).groupBy(courseOfferings.id, courses.title).orderBy(asc(courseOfferings.startsAt)),
-      database.select({ registration: courseRegistrations, courseTitle: courses.title, offeringCode: courseOfferings.code, currency: courseOfferings.currency, startsAt: courseOfferings.startsAt, organisationName: organisations.name, participantProfileId: registrationParticipants.profileId, courseId: courses.id, offeringId: courseOfferings.id, participantId: registrationParticipants.id, participantName: registrationParticipants.name, participantEmail: registrationParticipants.email, participantStatus: registrationParticipants.status, attendance: registrationParticipants.attendance, completedAt: registrationParticipants.completedAt }).from(courseRegistrations).innerJoin(courseOfferings, eq(courseOfferings.id, courseRegistrations.offeringId)).innerJoin(courses, eq(courses.id, courseOfferings.courseId)).leftJoin(organisations, eq(organisations.id, courseRegistrations.organisationId)).innerJoin(registrationParticipants, eq(registrationParticipants.registrationId, courseRegistrations.id)).orderBy(desc(courseRegistrations.createdAt)),
+      database.select({ registration: courseRegistrations, courseTitle: courses.title, offeringCode: courseOfferings.code, currency: courseRegistrations.currency, startsAt: courseOfferings.startsAt, organisationName: organisations.name, participantProfileId: registrationParticipants.profileId, courseId: courses.id, offeringId: courseOfferings.id, participantId: registrationParticipants.id, participantName: registrationParticipants.name, participantEmail: registrationParticipants.email, participantStatus: registrationParticipants.status, attendance: registrationParticipants.attendance, completedAt: registrationParticipants.completedAt }).from(courseRegistrations).innerJoin(courseOfferings, eq(courseOfferings.id, courseRegistrations.offeringId)).innerJoin(courses, eq(courses.id, courseOfferings.courseId)).leftJoin(organisations, eq(organisations.id, courseRegistrations.organisationId)).innerJoin(registrationParticipants, eq(registrationParticipants.registrationId, courseRegistrations.id)).orderBy(desc(courseRegistrations.createdAt)),
       database.select({ material: courseMaterials, courseTitle: courses.title, offeringCode: courseOfferings.code, recipientName: profiles.displayName, recipientEmail: user.email }).from(courseMaterials).leftJoin(courses, eq(courses.id, courseMaterials.courseId)).leftJoin(courseOfferings, eq(courseOfferings.id, courseMaterials.offeringId)).leftJoin(profiles, eq(profiles.id, courseMaterials.recipientProfileId)).leftJoin(user, eq(user.id, profiles.authUserId)).orderBy(desc(courseMaterials.createdAt)),
       database.select({ id: auditLogs.id, action: auditLogs.action, entityType: auditLogs.entityType, entityId: auditLogs.entityId, createdAt: auditLogs.createdAt }).from(auditLogs).where(like(auditLogs.action, "course.%")).orderBy(desc(auditLogs.createdAt)).limit(10),
     ]);
     const pending = registrationRows.filter((row) => row.participantStatus === "pending_review").length;
     const waitlisted = registrationRows.filter((row) => row.participantStatus === "waitlisted").length;
-    const outstandingCents = [...new Map(registrationRows.map((row) => [row.registration.id, row.registration])).values()].filter((row) => !["paid", "waived", "refunded"].includes(row.paymentStatus)).reduce((sum, row) => sum + row.amountDueCents, 0);
-    return Response.json({ ok: true, data: { courses: courseRows, offerings: offeringRows, registrations: registrationRows, materials: materialRows, recentActivity, metrics: { pending, upcoming: offeringRows.filter((row) => row.offering.startsAt > new Date() && !row.offering.isCancelled).length, waitlisted, outstandingCents } } });
+    const balances = outstandingByCurrency(registrationRows.map((row) => row.registration));
+    return Response.json({ ok: true, data: { courses: courseRows, offerings: offeringRows, registrations: registrationRows, materials: materialRows, recentActivity, metrics: { pending, upcoming: offeringRows.filter((row) => row.offering.startsAt > new Date() && !row.offering.isCancelled).length, waitlisted, outstandingByCurrency: balances } } });
   } catch (error) { return adminErrorResponse(error); }
 }
 
@@ -152,12 +153,15 @@ export async function PATCH(request: Request): Promise<Response> {
       const result = await database.transaction(async (tx) => {
         const [existing] = await tx.select().from(courseRegistrations).where(eq(courseRegistrations.id, input.id)).for("update");
         if (!existing) return Response.json({ ok: false, error: { message: "Registration not found." } }, { status: 404 });
-        if (!canTransitionPayment(existing.paymentStatus, input.paymentStatus)) return Response.json({ ok: false, error: { message: `Payment cannot move directly from ${existing.paymentStatus.replaceAll("_", " ")} to ${input.paymentStatus.replaceAll("_", " ")}.` } }, { status: 409 });
         const reference = input.paymentReference || null;
-        if (existing.paymentStatus === input.paymentStatus && existing.paymentReference === reference) return { updated: existing, notify: false };
-        const [updated] = await tx.update(courseRegistrations).set({ paymentStatus: input.paymentStatus, paymentReference: reference, updatedAt: new Date() }).where(eq(courseRegistrations.id, input.id)).returning();
-        await tx.insert(coursePaymentRecords).values({ registrationId: updated.id, status: input.paymentStatus, amountCents: updated.amountDueCents, reference, recordedByAuthUserId: session.user.id });
-        await tx.insert(auditLogs).values({ actorAuthUserId: session.user.id, action: "course.payment_updated", entityType: "course_registration", entityId: input.id, metadata: { previousStatus: existing.paymentStatus, status: input.paymentStatus } });
+        if (existing.paymentStatus === input.paymentStatus && existing.paymentReference === reference && !input.transactionCents) return { updated: existing, notify: false };
+        const transactionCents = input.transactionCents ?? (input.paymentStatus === "paid" ? existing.amountDueCents - existing.paidCents : input.paymentStatus === "refunded" ? existing.paidCents : 0);
+        let applied: ReturnType<typeof applyPaymentTransaction>;
+        try { applied = applyPaymentTransaction({ currentStatus: existing.paymentStatus, nextStatus: input.paymentStatus, amountDueCents: existing.amountDueCents, paidCents: existing.paidCents, transactionCents }); }
+        catch (error) { return Response.json({ ok: false, error: { message: error instanceof Error ? error.message : "Review the payment amount and status." } }, { status: 422 }); }
+        const [updated] = await tx.update(courseRegistrations).set({ paymentStatus: applied.status, paidCents: applied.paidCents, paymentReference: reference, updatedAt: new Date() }).where(eq(courseRegistrations.id, input.id)).returning();
+        await tx.insert(coursePaymentRecords).values({ registrationId: updated.id, status: applied.status, amountCents: applied.transactionCents, currency: updated.currency, reference, recordedByAuthUserId: session.user.id });
+        await tx.insert(auditLogs).values({ actorAuthUserId: session.user.id, action: "course.payment_updated", entityType: "course_registration", entityId: input.id, metadata: { previousStatus: existing.paymentStatus, status: applied.status, transactionCents: applied.transactionCents, currency: updated.currency } });
         return { updated, notify: existing.paymentStatus !== input.paymentStatus };
       });
       if (result instanceof Response) return result;

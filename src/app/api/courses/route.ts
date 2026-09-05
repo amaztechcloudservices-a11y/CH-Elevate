@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     const [registration] = await tx.insert(courseRegistrations).values({
       offeringId: offering.id, organisationId, applicantName: parsed.data.applicantName,
       applicantEmail: parsed.data.applicantEmail, applicantPhone: parsed.data.applicantPhone || null,
-      amountDueCents: offering.feeCents * parsed.data.participants.length,
+      amountDueCents: offering.feeCents * parsed.data.participants.length, currency: offering.currency,
     }).returning();
     const participants = await tx.insert(registrationParticipants).values(parsed.data.participants.map((participant) => ({
       registrationId: registration.id, offeringId: offering.id, name: participant.name,

@@ -38,7 +38,7 @@ export async function POST(request: Request) {
       const duplicates = await tx.select({ email: registrationParticipants.email }).from(registrationParticipants).where(and(eq(registrationParticipants.offeringId, offering.id), inArray(registrationParticipants.emailNormalized, emails)));
       if (duplicates.length) throw new CourseRosterError("One or more email addresses are already registered for this offering. No rows were imported.", 409);
       const [organisation] = await tx.insert(organisations).values({ name: parsed.data.organisationName, billingEmail: parsed.data.applicantEmail }).returning();
-      const [registration] = await tx.insert(courseRegistrations).values({ offeringId: offering.id, organisationId: organisation.id, applicantName: parsed.data.applicantName, applicantEmail: parsed.data.applicantEmail, amountDueCents }).returning();
+      const [registration] = await tx.insert(courseRegistrations).values({ offeringId: offering.id, organisationId: organisation.id, applicantName: parsed.data.applicantName, applicantEmail: parsed.data.applicantEmail, amountDueCents, currency: offering.currency }).returning();
       await tx.insert(registrationParticipants).values(participants.map((row) => ({ registrationId: registration.id, offeringId: offering.id, name: row.name, email: row.email, emailNormalized: row.email, phone: row.phone || null })));
       await tx.insert(auditLogs).values({ actorAuthUserId: session.user.id, action: "course.roster_imported", entityType: "course_registration", entityId: registration.id, metadata: { seats: participants.length } });
       return registration;

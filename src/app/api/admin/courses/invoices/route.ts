@@ -28,11 +28,11 @@ export async function POST(request: Request) {
     const input = parsed.data;
     if (input.file.type !== "application/pdf") return fail("Invoices and receipts must be PDF files.", 422);
     const result = await getDb().transaction(async (tx) => {
-      const [registration] = await tx.select({ id: courseRegistrations.id }).from(courseRegistrations).where(eq(courseRegistrations.id, input.registrationId)).for("update");
+      const [registration] = await tx.select({ id: courseRegistrations.id, currency: courseRegistrations.currency }).from(courseRegistrations).where(eq(courseRegistrations.id, input.registrationId)).for("update");
       if (!registration) return fail("Registration not found.", 404);
       // Keep the file provisional until its private metadata and audit write commit together.
       stored = await savePrivateFile(input.file, "invoices");
-      const [invoice] = await tx.insert(courseInvoices).values({ registrationId: input.registrationId, documentType: input.documentType, reference: input.reference, amountCents: input.amountCents, dueAt: input.dueAt ? new Date(input.dueAt) : null, notes: input.notes || null, storageKey: stored.storageKey, originalFilename: stored.originalFilename }).returning({ id: courseInvoices.id, registrationId: courseInvoices.registrationId, documentType: courseInvoices.documentType, reference: courseInvoices.reference, amountCents: courseInvoices.amountCents, dueAt: courseInvoices.dueAt, originalFilename: courseInvoices.originalFilename, createdAt: courseInvoices.createdAt });
+      const [invoice] = await tx.insert(courseInvoices).values({ registrationId: input.registrationId, documentType: input.documentType, reference: input.reference, amountCents: input.amountCents, currency: registration.currency, dueAt: input.dueAt ? new Date(input.dueAt) : null, notes: input.notes || null, storageKey: stored.storageKey, originalFilename: stored.originalFilename }).returning({ id: courseInvoices.id, registrationId: courseInvoices.registrationId, documentType: courseInvoices.documentType, reference: courseInvoices.reference, amountCents: courseInvoices.amountCents, currency: courseInvoices.currency, dueAt: courseInvoices.dueAt, originalFilename: courseInvoices.originalFilename, createdAt: courseInvoices.createdAt });
       await tx.insert(auditLogs).values({ actorAuthUserId: session.user.id, action: `course.${input.documentType}_uploaded`, entityType: "course_invoice", entityId: invoice.id });
       return Response.json({ ok: true, data: invoice }, { status: 201, headers: { "Cache-Control": "no-store" } });
     });

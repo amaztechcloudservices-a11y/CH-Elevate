@@ -99,6 +99,13 @@
       "when": 1788470238629,
       "tag": "0013_empty_power_man",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1788652483371,
+      "tag": "0014_aromatic_lizard",
+      "breakpoints": true
     }
   ]
 }
