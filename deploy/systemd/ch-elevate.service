@@ -1,0 +1,28 @@
+[Unit]
+Description=CH Elevate web application
+After=network-online.target postgresql.service
+Wants=network-online.target
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=ch-elevate
+Group=ch-elevate
+WorkingDirectory=/opt/ch-elevate/source
+EnvironmentFile=/etc/ch-elevate/ch-elevate.env
+Environment=NODE_ENV=production
+Environment=HOSTNAME=127.0.0.1
+Environment=PORT=3000
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/local/bin/node /opt/ch-elevate/source/.next/standalone/server.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/ch-elevate /opt/ch-elevate/source/.next/cache
+
+[Install]
+WantedBy=multi-user.target

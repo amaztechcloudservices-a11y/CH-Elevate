@@ -21,9 +21,12 @@ workflows.
 
 ## Local setup
 
+Install Node.js 22 or newer, pnpm 10, and PostgreSQL 16 or newer. Configure
+PostgreSQL to listen only on loopback; the example environment expects port
+`55434`.
+
 ```powershell
 Copy-Item .env.example .env.local
-docker compose up -d
 pnpm db:generate
 pnpm db:migrate
 pnpm courses:seed
@@ -33,6 +36,26 @@ pnpm dev
 Review generated authentication migrations before applying them. Add the first
 client administrator through an auditable provisioning command, not through a
 public role selector.
+
+### Windows local preview
+
+Register startup once using
+`powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install-local-startup.ps1`.
+
+On the configured workstation, run `pnpm local:start` to ensure the hidden
+`CH Elevate Local Server` Windows task is running and wait for the homepage to
+respond, then open `http://localhost:3001/` in Codex. Repeated launches reuse the
+same server. The task starts at Windows sign-in and restarts Next.js if it exits.
+Logs are stored in `D:\CodexData\tmp\ch-elevate-local`.
+
+For a foreground development session on another machine, use `pnpm dev:local`.
+Both launch methods bind to `127.0.0.1:3001`. The production standalone build
+configuration is separate from this local development server.
+
+To disable automatic startup on this workstation, run
+`Disable-ScheduledTask -TaskName 'CH Elevate Local Server'`. To remove its
+registration, run `Unregister-ScheduledTask -TaskName 'CH Elevate Local Server'`.
+Disabling startup does not stop an already running server.
 
 ## Commands
 
@@ -56,5 +79,7 @@ public web root. Include that directory in Hostinger backups. For standalone
 deployment, copy `public` and `.next/static` into `.next/standalone` before
 starting `.next/standalone/server.js`.
 
-Production uses the PostgreSQL service on the same Hostinger VPS/private
-network as the application. Never expose the database port publicly.
+Production runs directly on the Hostinger VPS with native PostgreSQL 16,
+systemd-managed Node.js services, and Nginx. The database and application port
+listen on loopback only. Deployment definitions and the rollback procedure are
+documented in `deploy/README.md`.
