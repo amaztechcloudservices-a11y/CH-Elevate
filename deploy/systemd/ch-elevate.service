@@ -17,6 +17,7 @@ Environment=PATH=/usr/local/bin:/usr/bin:/bin
 ExecStart=/usr/local/bin/node /opt/ch-elevate/source/.next/standalone/server.js
 Restart=on-failure
 RestartSec=5
+SuccessExitStatus=143
 TimeoutStopSec=30
 NoNewPrivileges=true
 PrivateTmp=true
