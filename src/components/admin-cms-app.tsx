@@ -25,6 +25,7 @@ import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 
 import { authClient } from "@/lib/auth-client";
 import { adminWorkspaces, type AdminWorkspace } from "@/lib/admin-workspaces";
 import { CourseAdminPanel } from "@/components/course-admin-panel";
+import { SystemAdminPanel } from "@/components/system-admin-panel";
 import { BookingEventsAdmin } from "@/components/booking-events-admin";
 import { BookingAdminPanel } from "@/components/booking-admin-panel";
 import { BookingEmailAdmin } from "@/components/booking-email-admin";
@@ -49,7 +50,8 @@ export type AdminTab =
   | "emails"
   | "inbox"
   | "availability"
-  | "courses";
+  | "courses"
+  | "system";
 
 type Tab = AdminTab;
 
@@ -73,6 +75,7 @@ const tabs: { id: Tab; label: string; icon: typeof Settings }[] = [
   { id: "events", label: "Booking events", icon: CalendarDays },
   { id: "emails", label: "Email notifications", icon: Mail },
   { id: "courses", label: "Courses", icon: GraduationCap },
+  { id: "system", label: "System status", icon: Settings },
   { id: "inbox", label: "Form inbox", icon: Inbox },
   { id: "availability", label: "Availability", icon: Settings },
 ];
@@ -240,6 +243,7 @@ export function AdminCmsApp({ initialTab = "overview", workspace = "website" }: 
           {tab === "events" && <BookingEventsAdmin />}
           {tab === "inbox" && <InboxPanel submissions={submissions} setSubmissions={setSubmissions} />}
           {tab === "courses" && <CourseAdminPanel />}
+          {tab === "system" && <SystemAdminPanel />}
         </div>
       </section>
     </main>

@@ -1,5 +1,6 @@
 import { createReadStream } from "node:fs";
-import { mkdir, stat, unlink, writeFile } from "node:fs/promises";
+import { access, mkdir, stat, unlink, writeFile } from "node:fs/promises";
+import { constants } from "node:fs";
 import { Readable } from "node:stream";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -52,6 +53,17 @@ function rootDirectory() {
   return configured
     ? path.resolve(/* turbopackIgnore: true */ configured)
     : path.join(process.cwd(), "storage", "course-portal");
+}
+
+export async function getCourseStorageStatus() {
+  try {
+    const details = await stat(rootDirectory());
+    if (!details.isDirectory()) return { ready: false, reason: "The configured storage location is not a directory." };
+    await access(rootDirectory(), constants.R_OK | constants.W_OK);
+    return { ready: true, reason: "Private course storage is readable and writable." };
+  } catch {
+    return { ready: false, reason: "Private course storage is unavailable." };
+  }
 }
 
 export async function savePrivateFile(file: File, category: "materials" | "invoices") {

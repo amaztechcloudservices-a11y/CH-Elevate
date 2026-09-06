@@ -6,9 +6,16 @@ const courseData = {
   courses: [], offerings: [], registrations: [], materials: [], recentActivity: [],
   metrics: { pending: 0, upcoming: 0, waitlisted: 0, outstandingCents: 0 },
 };
+const systemData = {
+  business: { email: "info@example.test", phone: "+1", address: "Kingston", timeZone: "America/Jamaica", locale: "en-JM", defaultCurrency: "JMD" },
+  access: { staff: [], activeSessions: 0, mfa: { configured: false, note: "MFA is not configured." } },
+  notifications: { smtpConfigured: false, bookingMailStates: {}, note: "Durable retry migration remains required." },
+  health: { database: { ready: true }, storage: { ready: true, reason: "Storage is ready." }, email: { ready: false } },
+  audit: { latest: null }, recovery: { lastBackupAt: null, lastRestoreTestAt: null, buildVersion: "test" },
+};
 
 for (const width of [320, 768, 1024, 1440]) {
-  for (const workspace of ["bookings", "courses", "website"] as const) {
+  for (const workspace of ["bookings", "courses", "website", "system"] as const) {
     test(`${workspace} is isolated and switchable at ${width}px`, async ({ page }) => {
       const requested: string[] = [];
       await page.route("**/api/admin/**", async (route) => {
@@ -18,7 +25,8 @@ for (const width of [320, 768, 1024, 1440]) {
         const data = path === "/api/admin/cms" ? defaultWebsiteCms()
           : path === "/api/admin/bookings/calendar" ? { bookings: [], events: [], blocks: [], days: [], timeZone: "America/Jamaica", today: "2026-09-03" }
           : path === "/api/admin/booking-settings" ? defaultCmsSnapshot.availability
-            : path === "/api/admin/courses" ? courseData : [];
+            : path === "/api/admin/courses" ? courseData
+              : path === "/api/admin/system" ? systemData : [];
         await route.fulfill({ json: { ok: true, data } });
       });
       await page.setViewportSize({ width, height: 900 });
@@ -36,14 +44,17 @@ for (const width of [320, 768, 1024, 1440]) {
         expect(requested).not.toContain("/api/admin/cms");
         expect(requested).not.toContain("/api/admin/bookings");
         await expect(page.getByRole("heading", { name: "Courses & registration." })).toBeVisible();
-      } else {
+      } else if (workspace === "website") {
         expect(labels.join(" ")).not.toMatch(/Bookings|Courses|Availability/);
         expect(requested).not.toContain("/api/admin/bookings");
         expect(requested).not.toContain("/api/admin/courses");
+      } else {
+        expect(labels.map((label) => label.trim())).toEqual(["System status"]);
+        await expect(page.getByRole("heading", { name: "System settings & health." })).toBeVisible();
       }
       const switcher = page.getByRole("navigation", { name: "Switch administration workspace" });
       const links = switcher.getByRole("link");
-      await expect(links).toHaveCount(2);
+      await expect(links).toHaveCount(3);
       await expect(links.first()).toBeVisible();
       await expect(links.last()).toBeVisible();
       expect(await switcher.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
@@ -74,7 +85,7 @@ test("legacy links arrive at their dedicated workspace", async ({ request }) => 
 });
 
 test("workspace APIs reject unauthenticated requests", async ({ request }) => {
-  for (const path of ["access", "booking-settings", "booking-events", "booking-emails", "bookings", "courses", "cms"]) {
+  for (const path of ["access", "booking-settings", "booking-events", "booking-emails", "bookings", "courses", "cms", "system"]) {
     expect((await request.get(`/api/admin/${path}`)).status()).toBe(401);
   }
   expect((await request.patch("/api/admin/booking-settings", { data: defaultCmsSnapshot.availability })).status()).toBe(401);

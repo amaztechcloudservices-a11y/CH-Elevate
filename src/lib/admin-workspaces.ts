@@ -1,8 +1,9 @@
-export type AdminWorkspace = "website" | "bookings" | "courses";
+export type AdminWorkspace = "website" | "bookings" | "courses" | "system";
 
 export const adminWorkspaces = {
   bookings: { label: "Booking administration", href: "/admin/bookings", tabs: ["bookings", "events", "emails"] },
   courses: { label: "Course Registration", href: "/admin/courses", tabs: ["courses"] },
+  system: { label: "System Settings", href: "/admin/system", tabs: ["system"] },
   website: { label: "Website Management", href: "/admin/website", tabs: ["overview", "global", "navigation", "hero", "pages", "forms", "inbox"] },
 } as const;
 
@@ -11,6 +12,7 @@ export function legacyAdminDestination(tab?: string) {
   if (tab === "availability" || tab === "events") return "/admin/bookings?tab=events";
   if (tab === "emails") return "/admin/bookings?tab=emails";
   if (tab === "courses") return "/admin/courses";
+  if (tab === "system") return "/admin/system";
   return adminWorkspaces.website.tabs.some((value) => value === tab) && tab !== "overview"
     ? `/admin/website?tab=${tab}` : "/admin/website";
 }
