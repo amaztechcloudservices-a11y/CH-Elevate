@@ -87,6 +87,7 @@ export function AdminCmsApp({ initialTab = "overview", workspace = "website" }: 
   const [tab, setTab] = useState<Tab>(initialTab);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cms, setCms] = useState<WebsiteCmsSnapshot | null>(null);
+  const [cmsRevision, setCmsRevision] = useState("");
   const [ready, setReady] = useState(false);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [imageUploads, setImageUploads] = useState(0);
@@ -112,6 +113,7 @@ export function AdminCmsApp({ initialTab = "overview", workspace = "website" }: 
         if (cancelled) return;
         if (workspace === "website") {
           setCms(results[0].data);
+          setCmsRevision(results[0].revision || "missing-revision");
           setSubmissions(results[1].data);
         }
         setReady(true);
@@ -133,11 +135,12 @@ export function AdminCmsApp({ initialTab = "overview", workspace = "website" }: 
     try {
     const response = await fetch("/api/admin/cms", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "If-Match": cmsRevision },
       body: JSON.stringify(cms),
     });
     const result = (await response.json()) as {
       data?: WebsiteCmsSnapshot;
+      revision?: string;
       error?: { message?: string };
     };
     if (!response.ok || !result.data) {
@@ -148,6 +151,7 @@ export function AdminCmsApp({ initialTab = "overview", workspace = "website" }: 
       return;
     }
     setCms(result.data);
+    if (result.revision) setCmsRevision(result.revision);
     setStatus({ kind: "success", message: "Published. The public site now uses these settings." });
     } catch {
       setStatus({ kind: "error", message: "Changes could not be saved. Your draft is still here; check the connection and try again." });

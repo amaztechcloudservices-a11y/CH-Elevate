@@ -295,8 +295,9 @@ export const cmsDocuments = pgTable(
   {
     key: text("key").primaryKey(),
     documentType: text("document_type").notNull(),
-    data: jsonb("data").$type<Record<string, unknown>>().notNull(),
-    updatedByAuthUserId: text("updated_by_auth_user_id"),
+      data: jsonb("data").$type<Record<string, unknown>>().notNull(),
+      revision: text("revision").default("legacy").notNull(),
+      updatedByAuthUserId: text("updated_by_auth_user_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

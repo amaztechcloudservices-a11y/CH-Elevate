@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { eq, inArray, sql } from "drizzle-orm";
 import { auditLogs, cmsDocuments } from "@/db/schema";
 import { defaultWebsiteCms, websiteCmsSchema, type WebsiteCmsSnapshot } from "@/lib/website-cms";
@@ -7,8 +8,7 @@ import { getDb } from "@/server/db";
 const documents = { settings: "global", heroSlides: "hero_slides", pages: "pages", forms: "forms" } as const;
 const isBookingForm = (value: unknown): boolean => !!value && typeof value === "object" && "key" in value && value.key === "booking";
 
-export async function getWebsiteCms(): Promise<WebsiteCmsSnapshot> {
-  const rows = await getDb().select().from(cmsDocuments).where(inArray(cmsDocuments.key, Object.values(documents)));
+function snapshotFromRows(rows: { key: string; data: unknown }[]): WebsiteCmsSnapshot {
   const candidate: Record<string, unknown> = defaultWebsiteCms();
   for (const [field, key] of Object.entries(documents)) {
     const row = rows.find((row) => row.key === key);
@@ -18,15 +18,33 @@ export async function getWebsiteCms(): Promise<WebsiteCmsSnapshot> {
   return websiteCmsSchema.parse(candidate);
 }
 
+export async function getWebsiteCms(): Promise<WebsiteCmsSnapshot> {
+  const rows = await getDb().select().from(cmsDocuments).where(inArray(cmsDocuments.key, Object.values(documents)));
+  return snapshotFromRows(rows);
+}
+
+function revisionFromRows(rows: { key: string; revision: string }[]) {
+  if (!rows.length) return "empty";
+  return rows.map((row) => `${row.key}:${row.revision}`).sort().join("|");
+}
+
+export async function getWebsiteCmsState() {
+  const rows = await getDb().select().from(cmsDocuments).where(inArray(cmsDocuments.key, Object.values(documents)));
+  return { data: snapshotFromRows(rows), revision: revisionFromRows(rows) };
+}
+
 export async function getActiveWebsiteForm(key: "contact" | "newsletter"): Promise<FormDefinition | null> {
   const form = (await getWebsiteCms()).forms.find((candidate) => candidate.key === key);
   return form?.isActive ? form : null;
 }
 
-export async function saveWebsiteCms(snapshot: WebsiteCmsSnapshot, actor: string) {
+export async function saveWebsiteCms(snapshot: WebsiteCmsSnapshot, actor: string, expectedRevision: string) {
   const parsed = websiteCmsSchema.parse(snapshot);
+  const revision = randomUUID();
   await getDb().transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext('ch-elevate-website-cms'))`);
+    const currentRows = await tx.select().from(cmsDocuments).where(inArray(cmsDocuments.key, Object.values(documents))).for("update");
+    if (revisionFromRows(currentRows) !== expectedRevision) throw new WebsiteCmsConflictError();
     const [existing] = await tx.select().from(cmsDocuments).where(eq(cmsDocuments.key, "forms")).for("update");
     const storedForms: unknown = existing?.data ?? [];
     if (!Array.isArray(storedForms)) throw new Error("Stored forms must be repaired before publishing.");
@@ -34,10 +52,14 @@ export async function saveWebsiteCms(snapshot: WebsiteCmsSnapshot, actor: string
     if (parsed.forms.length + legacy.length > 30) throw new Error("The stored form limit would be exceeded.");
     for (const [field, key] of Object.entries(documents)) {
       const data = (field === "forms" ? [...parsed.forms, ...legacy] : parsed[field as keyof WebsiteCmsSnapshot]) as unknown as Record<string, unknown>;
-      const values = { documentType: field, data, updatedByAuthUserId: actor, updatedAt: new Date() };
+      const values = { documentType: field, data, revision, updatedByAuthUserId: actor, updatedAt: new Date() };
       await tx.insert(cmsDocuments).values({ key, ...values }).onConflictDoUpdate({ target: cmsDocuments.key, set: values });
     }
     await tx.insert(auditLogs).values({ actorAuthUserId: actor, action: "website.content_published", entityType: "website", entityId: "content" });
   });
-  return parsed;
+  return { data: parsed, revision: Object.values(documents).map((key) => `${key}:${revision}`).sort().join("|") };
+}
+
+export class WebsiteCmsConflictError extends Error {
+  constructor() { super("The website was published by another administrator. Refresh before publishing your draft."); }
 }

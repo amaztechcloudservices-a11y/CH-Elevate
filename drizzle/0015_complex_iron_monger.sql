@@ -1,0 +1,1 @@
+ALTER TABLE "cms_documents" ADD COLUMN "revision" text DEFAULT 'legacy' NOT NULL;

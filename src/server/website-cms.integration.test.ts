@@ -19,13 +19,15 @@ import { GET as inbox, PATCH as updateInbox } from "@/app/api/admin/submissions/
 const enabled = process.env.BOOKING_DB_TESTS === "1";
 const schema = `website_cms_test_${randomUUID().replaceAll("-", "")}`;
 let pool: Pool; let setup: Pool;
-const request = (body?: unknown, origin = "http://localhost:3001", admin = "yes", path = "cms") => new Request(`http://localhost:3001/api/admin/${path}`, { method: body === undefined ? "GET" : "PATCH", headers: { origin, "x-fixture-admin": admin, "content-type": "application/json" }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+const request = (body?: unknown, origin = "http://localhost:3001", admin = "yes", path = "cms", revision?: string) => new Request(`http://localhost:3001/api/admin/${path}`, { method: body === undefined ? "GET" : "PATCH", headers: { origin, "x-fixture-admin": admin, "content-type": "application/json", ...(revision ? { "if-match": revision } : {}) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+const currentCms = async () => (await (await GET(request())).json()) as { data: ReturnType<typeof defaultWebsiteCms>; revision: string };
 beforeAll(async () => {
   if (!enabled) return;
   process.loadEnvFile(".env.local"); const url = new URL(process.env.DATABASE_URL!);
   if (!["localhost", "127.0.0.1"].includes(url.hostname) || url.port !== "55434" || url.pathname !== "/premium_web") throw new Error("Verified local fixture database required.");
   setup = new Pool({ connectionString: url.href }); await setup.query(`create schema "${schema}"`);
   for (const table of ["cms_documents", "audit_logs", "booking_events", "courses", "form_submissions"]) await setup.query(`create table "${schema}"."${table}" (like public."${table}" including all)`);
+  await setup.query(`alter table "${schema}"."cms_documents" add column if not exists revision text default 'legacy' not null`);
   pool = new Pool({ connectionString: url.href, options: `-c search_path=${schema},public` }); database = drizzle(pool);
   await pool.query("insert into cms_documents(key,document_type,data) values('availability','availability',$1),('forms','forms',$2),('unrelated','unknown',$3)", [JSON.stringify({ untouched: "invalid legacy availability must not affect Website reads" }), JSON.stringify(defaultCmsSnapshot.forms), JSON.stringify({ keep: true })]);
   await pool.query("insert into booking_events(slug,data) values('untouched',$1)", [JSON.stringify({ untouched: true })]);
@@ -41,28 +43,40 @@ async function inboxFixture() {
 
 it.skipIf(!enabled)("returns website-only content and rejects mixed contracts and cross-origin writes", async () => {
   const response = await GET(request()); expect(response.status).toBe(200); expect(response.headers.get("cache-control")).toBe("private, no-store");
-  const data = (await response.json()).data; expect(Object.keys(data).sort()).toEqual(["forms", "heroSlides", "pages", "settings"]);
+  const state = await response.json(); const { data, revision } = state; expect(Object.keys(data).sort()).toEqual(["forms", "heroSlides", "pages", "settings"]);
   expect(data.forms.some((form: { key: string }) => form.key === "booking")).toBe(false);
-  expect((await PATCH(request(defaultCmsSnapshot))).status).toBe(422);
-  expect((await PATCH(request({ ...data, forms: defaultCmsSnapshot.forms }))).status).toBe(422);
-  expect((await PATCH(request(data, "https://untrusted.example"))).status).toBe(403);
-  expect((await PATCH(request(data, undefined, "no"))).status).toBe(403);
+  expect((await PATCH(request(defaultCmsSnapshot, undefined, "yes", "cms", revision))).status).toBe(422);
+  expect((await PATCH(request({ ...data, forms: defaultCmsSnapshot.forms }, undefined, "yes", "cms", revision))).status).toBe(422);
+  expect((await PATCH(request(data, "https://untrusted.example", "yes", "cms", revision))).status).toBe(403);
+  expect((await PATCH(request(data, undefined, "no", "cms", revision))).status).toBe(403);
+  expect((await PATCH(request(data))).status).toBe(428);
   expect((await GET(request(undefined, undefined, "no"))).status).toBe(403);
   expect((await bookingSettings(request(defaultCmsSnapshot.availability, "https://untrusted.example", "yes", "booking-settings"))).status).toBe(403);
   expect((await bookingSettings(request({ ...defaultCmsSnapshot.availability, settings: data.settings }, undefined, "yes", "booking-settings"))).status).toBe(422);
 });
 it.skipIf(!enabled)("publishes website documents without changing booking/course records or the hidden legacy form", async () => {
-  const before = await protectedState(); const data = defaultWebsiteCms(); data.settings.brandName = "Isolated website edit";
-  expect((await PATCH(request(data))).status).toBe(200);
+  const before = await protectedState(); const state = await currentCms(); const data = defaultWebsiteCms(); data.settings.brandName = "Isolated website edit";
+  expect((await PATCH(request(data, undefined, "yes", "cms", state.revision))).status).toBe(200);
   expect((await (await GET(request())).json()).data.settings.brandName).toBe("Isolated website edit");
   expect(await protectedState()).toEqual(before);
   const forms = (await pool.query("select data from cms_documents where key='forms'")).rows[0].data;
   expect(forms.filter((form: { key: string }) => form.key === "booking")).toEqual(defaultCmsSnapshot.forms.filter((form) => form.key === "booking"));
   expect((await pool.query("select action from audit_logs")).rows).toEqual([{ action: "website.content_published" }]);
 });
+it.skipIf(!enabled)("rejects a stale website editor instead of silently overwriting a newer publication", async () => {
+  const state = await currentCms();
+  const first = structuredClone(state.data); first.settings.brandName = "First editor publication";
+  const stale = structuredClone(state.data); stale.settings.brandName = "Stale editor publication";
+  expect((await PATCH(request(first, undefined, "yes", "cms", state.revision))).status).toBe(200);
+  const conflict = await PATCH(request(stale, undefined, "yes", "cms", state.revision));
+  expect(conflict.status).toBe(409);
+  expect((await conflict.json()).error.code).toBe("REVISION_CONFLICT");
+  expect((await currentCms()).data.settings.brandName).toBe("First editor publication");
+});
 it.skipIf(!enabled)("rejects malformed stored website content instead of offering defaults to overwrite it", async () => {
   await pool.query("update cms_documents set data='{}' where key='forms'");
-  expect((await GET(request())).status).toBe(500); expect((await PATCH(request(defaultWebsiteCms()))).status).toBe(500);
+  const revision = (await pool.query("select key,revision from cms_documents where key in ('global','hero_slides','pages','forms') order by key")).rows.map((row) => `${row.key}:${row.revision}`).join("|");
+  expect((await GET(request())).status).toBe(500); expect((await PATCH(request(defaultWebsiteCms(), undefined, "yes", "cms", revision))).status).toBe(500);
   await pool.query("update cms_documents set data=$1 where key='forms'", [JSON.stringify(defaultCmsSnapshot.forms)]);
 });
 it.skipIf(!enabled)("the Website editor saves its narrow contract, retries failure and reloads stored content", async () => {
@@ -77,7 +91,7 @@ it.skipIf(!enabled)("the Website editor saves its narrow contract, retries failu
         expect(Object.keys(incoming.postDataJSON()).sort()).toEqual(["forms", "heroSlides", "pages", "settings"]);
         if (++attempts === 1) return route.abort("failed");
       }
-      const response = incoming.method() === "PATCH" ? await PATCH(request(incoming.postDataJSON())) : await GET(request());
+      const response = incoming.method() === "PATCH" ? await PATCH(request(incoming.postDataJSON(), undefined, "yes", "cms", incoming.headers()["if-match"])) : await GET(request());
       await route.fulfill({ status: response.status, headers: Object.fromEntries(response.headers), body: await response.text() });
     });
     await page.goto("http://localhost:3001/admin/website?tab=global");
