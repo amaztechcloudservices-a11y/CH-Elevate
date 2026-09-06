@@ -48,7 +48,11 @@ test.describe("CH Elevate course portal", () => {
     const context = await playwrightRequest.newContext({ baseURL });
     for (let attempt = 0; attempt < 4; attempt += 1) {
       const response = await context.post("/api/auth/sign-up/email", { data: { name, email, password } });
-      if (response.ok()) return context;
+      if (response.ok()) {
+        const storageState = await context.storageState();
+        await context.dispose();
+        return playwrightRequest.newContext({ baseURL, storageState, extraHTTPHeaders: { origin: baseURL } });
+      }
       if (response.status() !== 429 || attempt === 3) expect(response.ok(), await response.text()).toBeTruthy();
       const retryAfter = Number(response.headers()["retry-after"] || 10);
       await new Promise((resolve) => setTimeout(resolve, Math.max(1, retryAfter) * 1000 + 250));
@@ -83,6 +87,7 @@ test.describe("CH Elevate course portal", () => {
     coordinator = await account(coordinatorEmail, "Organisation Coordinator");
     participant = await account(participantEmail, "Organisation Participant");
     unrelated = await account(unrelatedEmail, "Unrelated Coordinator");
+    await pool.query('update "user" set email_verified=true where email=any($1::text[])', [[adminEmail, studentAEmail, studentBEmail, coordinatorEmail, participantEmail, unrelatedEmail]]);
     await pool.query(`update profiles set role = 'client_admin' from "user" where profiles.auth_user_id = "user".id and "user".email = $1`, [adminEmail]);
   });
 
@@ -99,6 +104,29 @@ test.describe("CH Elevate course portal", () => {
     expect((await studentA.get("/api/portal")).status()).toBe(403);
     await pool.query(`update profiles set role = 'customer' from "user" where profiles.auth_user_id = "user".id and "user".email = $1`, [studentAEmail]);
     expect((await admin.get("/api/admin/courses")).status()).toBe(200);
+  });
+
+  test("reports live dependency health only to an authenticated administrator", async ({ browser }) => {
+    expect((await anonymous.get("/api/admin/system")).status()).toBe(401);
+    const response = await admin.get("/api/admin/system");
+    expect(response.status(), await response.text()).toBe(200);
+    const system = (await response.json()).data;
+    expect(system.health.database.ready).toBe(true);
+    expect(system.health.storage.ready).toBe(true);
+    expect(system.health.email.ready).toBe(true);
+
+    const context = await browser.newContext({ baseURL, storageState: await admin.storageState() });
+    const page = await context.newPage();
+    const consoleProblems: string[] = [];
+    page.on("console", (message) => { if (["error", "warning"].includes(message.type())) consoleProblems.push(message.text()); });
+    await page.goto("/admin/system", { waitUntil: "networkidle" });
+    await expect(page.getByRole("heading", { name: "System settings & health." })).toBeVisible();
+    const health = page.getByRole("heading", { name: "Service health" }).locator("..");
+    await expect(health).toContainText("DatabaseApplication data connectionReady");
+    await expect(health).toContainText("Private storage");
+    await expect(health).toContainText("EmailOutbound SMTP configurationConfigured");
+    expect(consoleProblems).toEqual([]);
+    await context.close();
   });
 
   test("creates catalogue offerings and validates registration windows", async () => {
@@ -168,7 +196,7 @@ test.describe("CH Elevate course portal", () => {
   });
 
   test("tracks invoices, payments, attendance, certificates, verification, and downloads", async () => {
-    const invoice = await admin.post("/api/admin/courses/invoices", { multipart: { registrationId: registrationAId, reference: `INV-${suffix}`, amountCents: "2500000", dueAt: new Date(Date.now() + 7 * 86400000).toISOString(), notes: "Offline payment test", file: { name: "invoice.pdf", mimeType: "application/pdf", buffer: pdf } } });
+    const invoice = await admin.post("/api/admin/courses/invoices", { multipart: { registrationId: registrationAId, reference: `INV-${suffix}`, amountCents: "2500000", dueAt: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10), notes: "Offline payment test", file: { name: "invoice.pdf", mimeType: "application/pdf", buffer: pdf } } });
     expect(invoice.status(), await invoice.text()).toBe(201);
     invoiceId = (await invoice.json()).data.id;
     expect((await studentA.get(`/api/portal/downloads/invoice/${invoiceId}`)).status()).toBe(200);
@@ -182,7 +210,7 @@ test.describe("CH Elevate course portal", () => {
     expect((await studentA.get(`/api/portal/downloads/receipt/${receiptId}`)).status()).toBe(200);
     expect((await studentA.get(`/api/portal/downloads/invoice/${receiptId}`)).status()).toBe(404);
     expect((await portal(studentA)).invoices.some((document: { documentType: string }) => document.documentType === "receipt")).toBeTruthy();
-    expect(Number((await pool.query(`select count(*) from course_payment_records where registration_id = $1`, [registrationAId])).rows[0].count)).toBeGreaterThanOrEqual(3);
+    expect((await pool.query(`select status,amount_cents,currency,reference from course_payment_records where registration_id = $1`, [registrationAId])).rows).toEqual([{ status: "paid", amount_cents: 2500000, currency: "JMD", reference: `BANK-${suffix}` }]);
 
     expect((await admin.patch("/api/admin/courses", { data: { action: "certificate", participantId: participantAId } })).status()).toBe(409);
     expect((await admin.patch("/api/admin/courses", { data: { action: "attendance", participantIds: [participantAId], attendance: "attended", complete: true } })).status()).toBe(200);
@@ -212,18 +240,19 @@ test.describe("CH Elevate course portal", () => {
     expect(approval.status(), await approval.text()).toBe(200);
     const coordinatorData = await portal(coordinator);
     const participantData = await portal(participant);
-    organisationParticipantId = participantData.registrations[0].participant.id;
+    const organisationParticipant = participantData.registrations[0].participant;
+    organisationParticipantId = organisationParticipant.id;
     expect(coordinatorData.registrations.some((row: { participant: { email: string } }) => row.participant.email === participantEmail)).toBeTruthy();
     expect(participantData.registrations).toHaveLength(1);
     expect((await portal(unrelated)).registrations).toHaveLength(0);
     const added = await coordinator.patch("/api/portal", { data: { action: "add_participant", registrationId: organisationRegistrationId, name: "Replacement Seat", email: `new-seat-${suffix}@test.local`, phone: "" } });
     expect(added.status(), await added.text()).toBe(200);
-    const replacement = await coordinator.patch("/api/portal", { data: { action: "replace_participant", participantId: organisationParticipantId, name: "Approved Replacement", email: `approved-replacement-${suffix}@test.local`, phone: "" } });
+    const replacement = await coordinator.patch("/api/portal", { data: { action: "replace_participant", participantId: organisationParticipantId, updatedAt: organisationParticipant.updatedAt, name: "Approved Replacement", email: `approved-replacement-${suffix}@test.local`, phone: "" } });
     expect(replacement.status(), await replacement.text()).toBe(200);
     expect((await portal(coordinator)).registrations.some((row: { participant: { email: string; status: string } }) => row.participant.email === `approved-replacement-${suffix}@test.local` && row.participant.status === "pending_review")).toBeTruthy();
-    const forbiddenParticipantChange = await participant.patch("/api/portal", { data: { action: "replace_participant", participantId: organisationParticipantId, name: "Unauthorized Change", email: participantEmail, phone: "" } });
+    const forbiddenParticipantChange = await participant.patch("/api/portal", { data: { action: "replace_participant", participantId: organisationParticipantId, updatedAt: organisationParticipant.updatedAt, name: "Unauthorized Change", email: participantEmail, phone: "" } });
     expect(forbiddenParticipantChange.status()).toBe(403);
-    const forbiddenCrossOrganisation = await unrelated.patch("/api/portal", { data: { action: "replace_participant", participantId: organisationParticipantId, name: "Cross Org", email: participantEmail, phone: "" } });
+    const forbiddenCrossOrganisation = await unrelated.patch("/api/portal", { data: { action: "replace_participant", participantId: organisationParticipantId, updatedAt: organisationParticipant.updatedAt, name: "Cross Org", email: participantEmail, phone: "" } });
     expect(forbiddenCrossOrganisation.status()).toBe(403);
   });
 
@@ -285,10 +314,12 @@ test.describe("CH Elevate course portal", () => {
     const startsAt = new Date(Date.now() + 120 * 86400000);
     const offeringResponse = await admin.post("/api/admin/courses", { data: { kind: "offering", courseId, code: `MANAGE-${suffix}`, startsAt: startsAt.toISOString(), endsAt: new Date(startsAt.getTime() + 86400000).toISOString(), deliveryMode: "in_person", venue: "Original venue", joiningInstructions: "Original details", feeCents: 0, currency: "JMD", capacityMode: "unlimited", capacity: null, registrationOpensAt: null, registrationClosesAt: null, substitutionCutoffAt: null, isPublished: true } });
     expect(offeringResponse.status(), await offeringResponse.text()).toBe(201);
-    const managedOfferingId = (await offeringResponse.json()).data.id;
+    const managedOffering = (await offeringResponse.json()).data;
+    const managedOfferingId = managedOffering.id;
     const managedOneEmail = `managed-one-${suffix}@test.local`, managedTwoEmail = `managed-two-${suffix}@test.local`;
     const managedOne = await account(managedOneEmail, "Managed One");
     const managedTwo = await account(managedTwoEmail, "Managed Two");
+    await pool.query('update "user" set email_verified=true where email=any($1::text[])', [[managedOneEmail, managedTwoEmail]]);
     const applicationOne = await postApplication(managedOfferingId, managedOneEmail, "Managed One");
     const applicationTwo = await postApplication(managedOfferingId, managedTwoEmail, "Managed Two");
     const registrationIds = [(await applicationOne.json()).data.id, (await applicationTwo.json()).data.id];
@@ -296,7 +327,7 @@ test.describe("CH Elevate course portal", () => {
     expect(bulk.status(), await bulk.text()).toBe(200);
     expect((await bulk.json()).data.map((row: { status: string }) => row.status)).toEqual(["approved", "approved"]);
     const changedStart = new Date(startsAt.getTime() + 2 * 86400000);
-    const schedule = await admin.patch("/api/admin/courses", { data: { action: "offering_update", id: managedOfferingId, startsAt: changedStart.toISOString(), endsAt: new Date(changedStart.getTime() + 86400000).toISOString(), deliveryMode: "blended", venue: "Updated venue", joiningInstructions: "Updated joining details", feeCents: 0, currency: "JMD", capacityMode: "unlimited", capacity: null, registrationOpensAt: null, registrationClosesAt: null, substitutionCutoffAt: null, isPublished: true } });
+    const schedule = await admin.patch("/api/admin/courses", { data: { action: "offering_update", id: managedOfferingId, updatedAt: managedOffering.updatedAt, startsAt: changedStart.toISOString(), endsAt: new Date(changedStart.getTime() + 86400000).toISOString(), deliveryMode: "blended", venue: "Updated venue", joiningInstructions: "Updated joining details", feeCents: 0, currency: "JMD", capacityMode: "unlimited", capacity: null, registrationOpensAt: null, registrationClosesAt: null, substitutionCutoffAt: null, isPublished: true } });
     expect(schedule.status(), await schedule.text()).toBe(200);
     expect((await portal(managedOne)).registrations[0].offering.venue).toBe("Updated venue");
     const cancellation = await admin.patch("/api/admin/courses", { data: { action: "offering_cancel", id: managedOfferingId } });
@@ -328,7 +359,7 @@ test.describe("CH Elevate course portal", () => {
     page.on("console", (message) => { if (["error", "warning"].includes(message.type())) consoleProblems.push(message.text()); });
     await page.goto("/portal/login");
     await page.getByLabel("Email address").fill(studentAEmail);
-    await page.getByLabel("Password").fill(password);
+    await page.getByLabel("Password", { exact: true }).fill(password);
     await page.waitForTimeout(750);
     await page.getByRole("button", { name: "Sign in" }).click();
     await page.waitForURL("**/portal/profile");
@@ -365,8 +396,15 @@ test.describe("CH Elevate course portal", () => {
     await page.getByLabel("Password").fill(password);
     await page.waitForTimeout(750);
     await page.getByRole("button", { name: /Sign in/ }).click();
-    await page.waitForURL("**/admin");
-    await page.getByRole("button", { name: "Toggle dashboard menu" }).click();
+    await page.waitForURL("**/admin/website");
+    await page.getByRole("link", { name: "Course Registration", exact: true }).click();
+    await page.waitForURL("**/admin/courses");
+    await page.getByRole("button", { name: "Open administration menu" }).click();
+    const sidebarClose = page.locator("#administration-menu").getByRole("button", { name: "Close administration menu" });
+    await expect(sidebarClose).toBeVisible();
+    await sidebarClose.click();
+    await expect(page.getByRole("button", { name: "Open administration menu" })).toBeVisible();
+    await page.getByRole("button", { name: "Open administration menu" }).click();
     await page.getByRole("button", { name: "Courses", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Courses & registration." })).toBeVisible();
     await expect(page.getByRole("button", { name: /Approve selected/ })).toBeVisible();

@@ -17,6 +17,7 @@ test("one administrator login switches between isolated workspaces without chang
   for (const endpoint of endpoints) expect((await api.get(`/api/admin/${endpoint}`)).status()).toBe(401);
   expect((await api.patch("/api/admin/cms", { data: {} })).status()).toBe(401);
   const signup = await api.post("/api/auth/sign-up/email", { data: { name: "Workspace review administrator", email, password } }); expect(signup.status()).toBe(200); userId = (await signup.json()).user.id;
+  await pool.query('update "user" set email_verified=true where id=$1', [userId]);
   for (const endpoint of endpoints) expect((await api.get(`/api/admin/${endpoint}`)).status()).toBe(403);
   expect((await api.patch("/api/admin/cms", { data: {} })).status()).toBe(403);
   await pool.query("update profiles set role='client_admin' where auth_user_id=$1", [userId]);
@@ -29,7 +30,9 @@ test("one administrator login switches between isolated workspaces without chang
   }
   await page.goto("/admin/login?next=%2Fadmin%2Fbookings");
   await page.getByLabel("Email address").fill(email); await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.waitForTimeout(750);
   await page.getByRole("button", { name: "Sign in to booking administration", exact: true }).click();
+  await page.waitForURL("**/admin/bookings");
   await expect(page.locator("main.cms-admin")).toHaveAttribute("data-workspace", "bookings");
   for (const [workspace, label, allowed] of [
     ["courses", "Course Registration", ["/api/admin/access", "/api/admin/courses"]],
@@ -44,9 +47,9 @@ test("one administrator login switches between isolated workspaces without chang
   }
   expect(writes).toEqual([]);
   const cms = await ui.request.get("/api/admin/cms"); expect(cms.status()).toBe(200);
-  const data = (await cms.json()).data; expect(Object.keys(data).sort()).toEqual(["forms", "heroSlides", "pages", "settings"]);
+  const cmsState = await cms.json(); const data = cmsState.data; expect(Object.keys(data).sort()).toEqual(["forms", "heroSlides", "pages", "settings"]);
   expect(data.forms.some((form: { key: string }) => form.key === "booking")).toBe(false);
-  expect((await ui.request.patch("/api/admin/cms", { headers: { origin: baseURL }, data: { ...data, availability: {} } })).status()).toBe(422);
+  expect((await ui.request.patch("/api/admin/cms", { headers: { origin: baseURL, "if-match": cmsState.revision }, data: { ...data, availability: {} } })).status()).toBe(422);
   expect((await ui.request.patch("/api/admin/cms", { headers: { origin: "https://untrusted.example" }, data })).status()).toBe(403);
   await pool.query("update profiles set active=false where auth_user_id=$1", [userId]);
   for (const endpoint of endpoints) expect((await ui.request.get(`/api/admin/${endpoint}`)).status()).toBe(403);

@@ -10,7 +10,7 @@ const subscribeToHydration = () => () => undefined;
 
 function PasswordField({ label, name, autoComplete }: { label: string; name: string; autoComplete: "current-password" | "new-password" }) {
   const [shown, setShown] = useState(false);
-  return <label><span>{label}</span><span className="portal-password"><input name={name} type={shown ? "text" : "password"} autoComplete={autoComplete} minLength={8} required aria-describedby={`${name}-requirements`} /><button type="button" aria-label={`${shown ? "Hide" : "Show"} ${label.toLowerCase()}`} onClick={() => setShown((value) => !value)}>{shown ? <EyeOff /> : <Eye />}</button></span><small id={`${name}-requirements`}>Use at least 8 characters.</small></label>;
+  return <div className="portal-password-field"><label htmlFor={name}>{label}</label><span className="portal-password"><input id={name} name={name} type={shown ? "text" : "password"} autoComplete={autoComplete} minLength={8} required aria-describedby={`${name}-requirements`} /><button type="button" aria-label={`${shown ? "Hide" : "Show"} ${label.toLowerCase()}`} onClick={() => setShown((value) => !value)}>{shown ? <EyeOff /> : <Eye />}</button></span><small id={`${name}-requirements`}>Use at least 8 characters.</small></div>;
 }
 
 export function PortalSignInForm() {

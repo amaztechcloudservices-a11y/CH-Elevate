@@ -32,7 +32,7 @@ test("signed-in administrator creates a persistent event visible to public clien
     await page.getByLabel("Event URL slug").fill(slug);
     await page.getByLabel("Description", { exact: true }).fill("Temporary test event for verification only.");
     await page.getByLabel("Agent name", { exact: true }).fill("Fixture Agent");
-    await page.getByLabel("Agent photo URL").fill("/images/home-hero-background-4.png");
+    await page.getByLabel("Agent photo", { exact: true }).setInputFiles("public/images/home-hero-background-4.png");
     await page.getByLabel("Session duration").selectOption("60");
     await page.getByLabel("Publish on the booking page").check();
     await page.getByRole("button", { name: "Save event", exact: true }).click();
