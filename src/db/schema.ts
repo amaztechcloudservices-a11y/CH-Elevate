@@ -366,6 +366,21 @@ export const bookingMailDeliveries = pgTable("booking_mail_deliveries", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [uniqueIndex("booking_mail_version_kind_idx").on(table.bookingId, table.bookingVersion, table.kind), index("booking_mail_state_idx").on(table.state, table.createdAt)]);
 
+export const operationalMailDeliveries = pgTable("operational_mail_deliveries", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  channel: text("channel").$type<"website" | "course">().notNull(),
+  recipient: text("recipient").notNull(),
+  replyTo: text("reply_to"),
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  state: text("state").$type<"pending" | "sending" | "accepted" | "failed" | "unknown">().default("pending").notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+  errorCode: text("error_code"),
+  availableAt: timestamp("available_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [index("operational_mail_ready_idx").on(table.state, table.availableAt), index("operational_mail_created_idx").on(table.createdAt)]);
+
 export const bookingBlocks = pgTable(
   "booking_blocks",
   {

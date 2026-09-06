@@ -9,7 +9,7 @@ const courseData = {
 const systemData = {
   business: { email: "info@example.test", phone: "+1", address: "Kingston", timeZone: "America/Jamaica", locale: "en-JM", defaultCurrency: "JMD" },
   access: { staff: [], activeSessions: 0, mfa: { configured: false, note: "MFA is not configured." } },
-  notifications: { smtpConfigured: false, bookingMailStates: {}, note: "Durable retry migration remains required." },
+  notifications: { smtpConfigured: false, bookingMailStates: {}, operationalMailStates: {}, attention: [], note: "Durable retry is active." },
   health: { database: { ready: true }, storage: { ready: true, reason: "Storage is ready." }, email: { ready: false } },
   audit: { latest: null }, recovery: { lastBackupAt: null, lastRestoreTestAt: null, buildVersion: "test" },
 };

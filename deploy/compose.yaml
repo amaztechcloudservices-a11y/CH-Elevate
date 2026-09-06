@@ -66,6 +66,21 @@ services:
     networks:
       - backend
 
+  mail-worker:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: tools
+    restart: unless-stopped
+    command: ["pnpm", "exec", "tsx", "scripts/process-operational-mail.ts"]
+    env_file:
+      - ../.env.production
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - backend
+
 networks:
   backend:
     internal: true
