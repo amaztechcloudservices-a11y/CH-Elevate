@@ -6,10 +6,16 @@ import { getSiteMailConfig } from "@/server/site-mail";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const smtpConfigured = Boolean(getSiteMailConfig().smtpUrl);
   const checks = {
     database: { ready: false, reason: "Database is unavailable." },
     storage: await getCourseStorageStatus(),
-    email: { ready: Boolean(getSiteMailConfig().smtpUrl), reason: getSiteMailConfig().smtpUrl ? "SMTP is configured." : "SMTP is not configured." },
+    email: {
+      ready: smtpConfigured,
+      configured: smtpConfigured,
+      reachable: null,
+      reason: smtpConfigured ? "SMTP is configured; live connectivity is checked in System Settings." : "SMTP is not configured.",
+    },
   };
   try {
     await getDb().execute(sql`select 1`);

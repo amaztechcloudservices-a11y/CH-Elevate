@@ -113,7 +113,7 @@ test.describe("CH Elevate course portal", () => {
     const system = (await response.json()).data;
     expect(system.health.database.ready).toBe(true);
     expect(system.health.storage.ready).toBe(true);
-    expect(system.health.email.ready).toBe(true);
+    expect(system.health.email).toMatchObject({ configured: true, reachable: true });
 
     const context = await browser.newContext({ baseURL, storageState: await admin.storageState() });
     const page = await context.newPage();
@@ -124,7 +124,7 @@ test.describe("CH Elevate course portal", () => {
     const health = page.getByRole("heading", { name: "Service health" }).locator("..");
     await expect(health).toContainText("DatabaseApplication data connectionReady");
     await expect(health).toContainText("Private storage");
-    await expect(health).toContainText("EmailOutbound SMTP configurationConfigured");
+    await expect(health).toContainText("EmailSMTP connection and authentication succeeded.Reachable");
     expect(consoleProblems).toEqual([]);
     await context.close();
   });

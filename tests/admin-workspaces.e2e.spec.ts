@@ -10,7 +10,7 @@ const systemData = {
   business: { email: "info@example.test", phone: "+1", address: "Kingston", timeZone: "America/Jamaica", locale: "en-JM", defaultCurrency: "JMD" },
   access: { staff: [], activeSessions: 0, mfa: { configured: false, note: "MFA is not configured." } },
   notifications: { smtpConfigured: false, bookingMailStates: {}, operationalMailStates: {}, attention: [], note: "Durable retry is active." },
-  health: { database: { ready: true }, storage: { ready: true, reason: "Storage is ready." }, email: { ready: false } },
+  health: { database: { ready: true }, storage: { ready: true, reason: "Storage is ready." }, email: { configured: true, reachable: false, reason: "SMTP endpoint could not be reached." } },
   audit: { latest: null }, recovery: { lastBackupAt: null, lastRestoreTestAt: null, buildVersion: "test" },
 };
 

@@ -13,7 +13,7 @@ it("reports ready only when required dependencies are available", async () => {
   execute.mockResolvedValueOnce([]); storage.mockResolvedValueOnce({ ready: true, reason: "Ready." });
   const ready = await GET();
   expect(ready.status).toBe(200);
-  expect((await ready.json()).checks).toMatchObject({ database: { ready: true }, storage: { ready: true }, email: { ready: true } });
+  expect((await ready.json()).checks).toMatchObject({ database: { ready: true }, storage: { ready: true }, email: { ready: true, configured: true, reachable: null, reason: "SMTP is configured; live connectivity is checked in System Settings." } });
 
   execute.mockRejectedValueOnce(new Error("offline")); storage.mockResolvedValueOnce({ ready: true, reason: "Ready." });
   const unavailable = await GET();

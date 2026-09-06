@@ -6,7 +6,7 @@ import { getDb } from "@/server/db";
 export const PRIMARY_SITE_EMAIL = "info@ch-elevateconsultancy.com";
 export const PRIMARY_SITE_FROM = `CH Elevate Consultancy Limited <${PRIMARY_SITE_EMAIL}>`;
 
-type MailEnvironment = {
+export type MailEnvironment = {
   SMTP_URL?: string;
   CONTACT_FROM?: string;
   CONTACT_TO?: string;
@@ -22,6 +22,37 @@ export function getSiteMailConfig(environment: MailEnvironment = {
     from: environment.CONTACT_FROM?.trim() || PRIMARY_SITE_FROM,
     recipient: environment.CONTACT_TO?.trim() || PRIMARY_SITE_EMAIL,
   };
+}
+
+export async function checkSiteMailConnection(environment?: MailEnvironment, timeoutMs = 5_000) {
+  const { smtpUrl } = environment ? getSiteMailConfig(environment) : getSiteMailConfig();
+  if (!smtpUrl) return { configured: false, reachable: false, reason: "SMTP is not configured." };
+
+  let config: URL;
+  try {
+    config = new URL(smtpUrl);
+    if (!["smtp:", "smtps:"].includes(config.protocol)) throw new Error("Unsupported SMTP protocol.");
+  } catch {
+    return { configured: true, reachable: false, reason: "SMTP configuration is invalid." };
+  }
+
+  for (const [key, value] of Object.entries({ connectionTimeout: timeoutMs, greetingTimeout: timeoutMs, socketTimeout: timeoutMs })) {
+    config.searchParams.set(key, String(value));
+  }
+  const transport = nodemailer.createTransport(config.toString());
+  try {
+    await transport.verify();
+    return { configured: true, reachable: true, reason: "SMTP connection and authentication succeeded." };
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    return {
+      configured: true,
+      reachable: false,
+      reason: code === "EAUTH" ? "SMTP authentication failed." : "SMTP endpoint could not be reached.",
+    };
+  } finally {
+    transport.close();
+  }
 }
 
 type WebsiteMail = {
