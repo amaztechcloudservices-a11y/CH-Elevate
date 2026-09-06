@@ -21,6 +21,7 @@ for (const width of [375, 1440]) {
       } } });
     });
     await page.goto("/admin/courses");
+    await page.getByText("Student access support", { exact: true }).click();
     const form = page.locator("form").filter({ has: page.getByRole("heading", { name: "Student password recovery" }) });
     const send = form.getByRole("button", { name: "Send password reset email" });
     await expect(send).toBeDisabled();
