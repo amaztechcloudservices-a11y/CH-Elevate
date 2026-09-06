@@ -18,6 +18,7 @@ import {
   Save,
   Settings,
   Trash2,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
@@ -89,6 +90,8 @@ export function AdminCmsApp({ initialTab = "overview", workspace = "website" }: 
   const workspaceTabs = tabs.filter((item) => area.tabs.some((value) => value === item.id));
   const [tab, setTab] = useState<Tab>(initialTab);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuCloseRef = useRef<HTMLButtonElement>(null);
   const [cms, setCms] = useState<WebsiteCmsSnapshot | null>(null);
   const [cmsRevision, setCmsRevision] = useState("");
   const [ready, setReady] = useState(false);
@@ -131,6 +134,18 @@ export function AdminCmsApp({ initialTab = "overview", workspace = "website" }: 
       });
     return () => { cancelled = true; };
   }, [workspace]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    mobileMenuCloseRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setMobileOpen(false);
+      mobileMenuButtonRef.current?.focus();
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [mobileOpen]);
 
   async function save() {
     if (workspace !== "website" || !cms || status.kind === "saving" || imageUploads > 0) return;
@@ -190,7 +205,19 @@ export function AdminCmsApp({ initialTab = "overview", workspace = "website" }: 
 
   return (
     <main className="cms-admin" data-workspace={workspace}>
-      <aside className={`cms-admin__sidebar ${mobileOpen ? "is-open" : ""}`}>
+      <aside id="administration-menu" className={`cms-admin__sidebar ${mobileOpen ? "is-open" : ""}`}>
+        <button
+          ref={mobileMenuCloseRef}
+          type="button"
+          className="cms-admin__sidebar-close"
+          aria-label="Close administration menu"
+          onClick={() => {
+            setMobileOpen(false);
+            mobileMenuButtonRef.current?.focus();
+          }}
+        >
+          <X aria-hidden="true" />
+        </button>
         <nav aria-label="Administration sections">
           {workspaceTabs.map(({ id, label, icon: Icon }) => (
             <button
@@ -213,7 +240,15 @@ export function AdminCmsApp({ initialTab = "overview", workspace = "website" }: 
 
       <section className="cms-admin__main">
         <header className="cms-admin__topbar">
-          <button type="button" className="cms-admin__mobile-menu" onClick={() => setMobileOpen((open) => !open)} aria-label="Toggle dashboard menu">
+          <button
+            ref={mobileMenuButtonRef}
+            type="button"
+            className="cms-admin__mobile-menu"
+            onClick={() => setMobileOpen((open) => !open)}
+            aria-label={mobileOpen ? "Close administration menu" : "Open administration menu"}
+            aria-controls="administration-menu"
+            aria-expanded={mobileOpen}
+          >
             <Menu aria-hidden="true" />
           </button>
           <div><span>{area.label}</span><strong>{activeLabel}</strong></div>

@@ -92,6 +92,47 @@ test("workspace APIs reject unauthenticated requests", async ({ request }) => {
   expect((await request.post("/api/admin/booking-emails", { data: { action: "test", kind: "approved" } })).status()).toBe(401);
 });
 
+test("responsive workspace drawers have an accessible close control", async ({ page }) => {
+  await page.route("**/api/admin/**", async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    const data = path === "/api/admin/bookings/calendar" ? { bookings: [], events: [], blocks: [], days: [], timeZone: "America/Jamaica", today: "2026-09-03" }
+      : path === "/api/admin/booking-settings" ? defaultCmsSnapshot.availability
+        : path === "/api/admin/courses" ? courseData
+          : path === "/api/admin/system" ? systemData : [];
+    await route.fulfill({ json: { ok: true, data } });
+  });
+
+  for (const width of [320, 980]) {
+    await page.setViewportSize({ width, height: 779 });
+    for (const workspace of ["bookings", "courses", "system"] as const) {
+      await page.goto(`/admin/${workspace}`, { waitUntil: "networkidle" });
+      const menu = page.locator(".cms-admin__mobile-menu");
+      await expect(menu).toBeVisible();
+      await expect(menu).toHaveAccessibleName("Open administration menu");
+      await expect(menu).toHaveAttribute("aria-expanded", "false");
+      await menu.click();
+
+      const close = page.locator(".cms-admin__sidebar").getByRole("button", { name: "Close administration menu" });
+      await expect(close).toBeVisible();
+      await expect(close).toBeFocused();
+      await expect(menu).toHaveAccessibleName("Close administration menu");
+      await expect(menu).toHaveAttribute("aria-expanded", "true");
+      await close.click();
+      await expect(menu).toBeFocused();
+      await expect(menu).toHaveAttribute("aria-expanded", "false");
+
+      await menu.click();
+      await page.keyboard.press("Escape");
+      await expect(menu).toBeFocused();
+      await expect(menu).toHaveAttribute("aria-expanded", "false");
+    }
+  }
+
+  await page.setViewportSize({ width: 981, height: 779 });
+  await expect(page.locator(".cms-admin__sidebar-close")).toBeHidden();
+  await expect(page.locator(".cms-admin__sidebar")).toBeVisible();
+});
+
 test("desktop workspaces raise the shared sign-out control", async ({ page }) => {
   await page.route("**/api/admin/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
