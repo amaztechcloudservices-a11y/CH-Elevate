@@ -18,7 +18,9 @@ inside the Git checkout.
 1. Create a PostgreSQL custom-format dump and archive the course storage.
 2. Fast-forward `/opt/ch-elevate/source` to the reviewed Git revision.
 3. Run `pnpm install --frozen-lockfile`, `pnpm check`, and `pnpm build`.
-4. Copy `public` and `.next/static` into `.next/standalone`.
+4. Copy `public` and `.next/static` into `.next/standalone`, remove the copied
+   `.env.production`, and create `.next/standalone/.next/cache` for the service
+   user. Systemd supplies the environment from `/etc/ch-elevate`.
 5. Install the checked-in systemd and Nginx definitions and validate them.
 6. Restart both systemd services, reload Nginx, and verify `/api/ready`.
 

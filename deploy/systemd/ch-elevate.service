@@ -22,7 +22,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=true
 ProtectSystem=strict
-ReadWritePaths=/var/lib/ch-elevate /opt/ch-elevate/source/.next/cache
+ReadWritePaths=/var/lib/ch-elevate /opt/ch-elevate/source/.next/standalone/.next/cache
 
 [Install]
 WantedBy=multi-user.target
