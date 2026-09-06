@@ -7,7 +7,7 @@ CH Elevate runs without project containers. The production stack is:
 - `ch-elevate.service` for the Next.js standalone server
 - `ch-elevate-mail-worker.service` for queued operational mail
 - Nginx for HTTP, HTTPS, and reverse proxying
-- Certbot for certificate renewal
+- Certbot for certificate renewal, with an Nginx reload hook
 
 Production secrets live in `/etc/ch-elevate/ch-elevate.env` with mode `0600`.
 Course files live in `/var/lib/ch-elevate/course-portal`. Neither location is
@@ -24,6 +24,10 @@ inside the Git checkout.
 
 Do not replace the environment file, database, certificate, or course storage
 during a routine release.
+
+Certbot uses the Nginx-served `/var/www/certbot` webroot. Install
+`deploy/certbot/reload-nginx.sh` in `/etc/letsencrypt/renewal-hooks/deploy` so a
+renewed certificate is loaded without restarting the application.
 
 ## Rollback
 
