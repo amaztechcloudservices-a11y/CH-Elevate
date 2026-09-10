@@ -9841,6 +9841,17 @@ textarea {
   }
 }
 
+@media (max-width: 620px) {
+  .elevate-home .elevate-hero.ref-hero .ref-hero__content > .ref-kicker {
+    width: min(66vw, 285px);
+    max-width: 100%;
+    font-size: clamp(11px, 2.8vw, 12px);
+    line-height: 1.25;
+    letter-spacing: 0.15em;
+    text-wrap: balance;
+  }
+}
+
 @media (min-width: 901px) {
   .global-site-shell.elevate-site .elevate-home > main > .elevate-intro,
   .global-site-shell.elevate-site .elevate-home > main > .elevate-home__services,
